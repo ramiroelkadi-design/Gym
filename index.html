@@ -1,0 +1,905 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mi plan de gym</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#15171B">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@500;600;700&display=swap">
+<style>
+:root{
+  --bg:#E7E9ED; --card:#FFFFFF; --ink:#15171B; --mute:#5C6473; --line:#D0D5DC; --soft:#F0F2F5;
+  --btn:#15171B; --btnink:#F4F4F0; --ok:#1B7F45; --danger:#C0332B;
+  --d0:#D63C34; --d0i:#FFFFFF; --d1:#2B6CD4; --d1i:#FFFFFF; --d2:#E5B21C; --d2i:#1C1600;
+  --d3:#2A9A5A; --d3i:#FFFFFF; --d4:#7C8796; --d4i:#FFFFFF;
+  --up:#8A3FD6; --upbg:#F2E9FC;
+  --fb:'Barlow',system-ui,-apple-system,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
+  --fn:'Barlow Condensed','Arial Narrow','Roboto Condensed',system-ui,sans-serif;
+  color-scheme:light dark;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#121417; --card:#1C1F24; --ink:#F0EFE9; --mute:#98A1AF; --line:#2B3038; --soft:#262A31;
+    --btn:#F0EFE9; --btnink:#14161A; --ok:#4CC486; --danger:#F0736B;
+    --d0:#EF5B52; --d1:#5A93F0; --d2:#F0C23A; --d3:#43BD7B; --d4:#9AA4B3;
+    --up:#C49DFF; --upbg:#2B2140;
+  }
+}
+:root[data-theme="light"]{color-scheme:light}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#121417; --card:#1C1F24; --ink:#F0EFE9; --mute:#98A1AF; --line:#2B3038; --soft:#262A31;
+  --btn:#F0EFE9; --btnink:#14161A; --ok:#4CC486; --danger:#F0736B;
+  --d0:#EF5B52; --d1:#5A93F0; --d2:#F0C23A; --d3:#43BD7B; --d4:#9AA4B3;
+    --up:#C49DFF; --upbg:#2B2140;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font:400 16px/1.4 var(--fb);-webkit-text-size-adjust:100%}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer;text-align:inherit}
+input,textarea{font:inherit;color:var(--ink)}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+h1,h2,h3,p{margin:0}
+svg.i{width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.num{font-family:var(--fn);font-variant-numeric:tabular-nums}
+main{max-width:560px;margin:0 auto;padding:10px 14px 88px}
+
+/* tabs */
+#tabs{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--card);border-top:1px solid var(--line);padding:6px 8px calc(6px + env(safe-area-inset-bottom,0px))}
+#tabs .tin{display:flex;max-width:560px;margin:0 auto;gap:4px}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 0 5px;border-radius:12px;color:var(--mute);font-size:12.5px;font-weight:600}
+.tab.on{color:var(--ink);background:var(--soft)}
+.tab.on svg.i{stroke-width:2.7}
+
+/* header + plates */
+.top{display:flex;align-items:center;justify-content:space-between;padding:4px 0 8px}
+.ic{width:48px;height:48px;border-radius:50%;display:grid;place-items:center}
+.wtitle{text-align:center;padding:2px 14px;border-radius:12px}
+.wtitle .num{display:block;font-size:36px;font-weight:700;line-height:1}
+.wtitle .sub{display:block;font-size:13px;color:var(--mute);margin-top:3px}
+.plates{display:flex;justify-content:space-between;gap:6px;padding:4px 0 16px}
+.plate{position:relative;flex:1;max-width:64px;aspect-ratio:1;border-radius:50%;border:5px solid var(--dc);background:var(--card);display:grid;place-items:center;font:600 17px var(--fn);letter-spacing:.02em}
+.plate.part{background:color-mix(in srgb,var(--dc) 38%,var(--card))}
+.plate.done{background:var(--dc);color:var(--dci)}
+.plate.skip{border-style:dashed;opacity:.5}
+.plate.next{outline:2px solid var(--ink);outline-offset:3px}
+.plate.sel::after{content:"";position:absolute;left:50%;bottom:-13px;width:7px;height:7px;margin-left:-3.5px;border-radius:50%;background:var(--ink)}
+.dayhead{display:flex;align-items:flex-end;justify-content:space-between;margin:2px 0 12px}
+.dtitle{font:700 30px/1 var(--fn)}
+.dblock{color:var(--mute);font-size:15px;margin-top:2px}
+.dprog{font-size:26px;font-weight:600;color:var(--mute)}
+.chipnext{display:inline-block;margin-left:8px;padding:2px 9px;border-radius:999px;background:var(--dc);color:var(--dci);font:600 13px var(--fb);vertical-align:middle}
+
+/* exercise cards */
+.list{margin:0}
+.ex{position:relative;display:block;width:100%;background:var(--card);border:1px solid var(--line);border-left:6px solid var(--dc);border-radius:14px;padding:12px 56px 12px 14px;margin:0 0 10px}
+.exname{font-size:19px;font-weight:600;line-height:1.2}
+.exobj{margin-left:8px;color:var(--mute);font:600 16px var(--fn);white-space:nowrap}
+.exlast,.extoday{display:block;margin-top:4px;font-size:14.5px;color:var(--mute)}
+.extoday{color:var(--ink)}
+.exlast b,.extoday b{font-weight:600;color:var(--ink)}
+.ex.up{background:var(--upbg);border-top-color:var(--up);border-right-color:var(--up);border-bottom-color:var(--up)}
+.exup{display:flex;align-items:center;gap:6px;margin-top:7px;font-weight:600;font-size:15.5px;color:var(--up)}
+.exup svg.i{width:18px;height:18px;stroke-width:3}
+.exup.okk{color:var(--ok)}
+.exmark{display:block;margin-top:5px;font-size:13.5px;font-weight:600;color:var(--up)}
+.upcount{display:inline-block;margin-top:6px;padding:2px 10px;border-radius:999px;background:var(--upbg);color:var(--up);border:1.5px solid var(--up);font-weight:600;font-size:14px}
+.upbanner{margin:12px 0 0;padding:12px 14px;border-radius:14px;background:var(--upbg);border:2px solid var(--up);color:var(--ink)}
+.upbanner b{display:flex;align-items:center;gap:6px;color:var(--up);font-size:18px}
+.upbanner.okk{border-color:var(--ok);background:var(--card)}
+.upbanner.okk b{color:var(--ok)}
+.upbanner span{display:block;margin-top:2px;font-size:15px}
+.upbtn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:56px;margin-top:22px;border-radius:14px;border:2px dashed var(--up);background:transparent;color:var(--up);font-weight:600;font-size:17px;text-align:center}
+.upbtn.on{border-style:solid;background:var(--up);color:var(--btnink)}
+.upbtn svg.i{stroke-width:3}
+.exnote{display:block;margin-top:7px;font-size:14px;padding:6px 9px;border-radius:8px;background:var(--soft)}
+.excheck{position:absolute;right:12px;top:14px;width:32px;height:32px;border-radius:50%;border:2px solid var(--line);display:grid;place-items:center}
+.excheck svg.i{width:18px;height:18px;stroke-width:3}
+.ex.done .excheck{background:var(--dc);border-color:var(--dc);color:var(--dci)}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:52px;border-radius:14px;font-weight:600;font-size:17px;padding:0 18px;margin-top:10px;text-align:center}
+.btn.primary{background:var(--btn);color:var(--btnink)}
+.btn.line{border:1.5px solid var(--line);background:var(--card)}
+.btn.danger{background:var(--danger);color:#fff}
+.btn.small{min-height:44px;font-size:15.5px}
+.fin{display:flex;align-items:center;gap:8px;margin:16px 0 0;font-weight:600;color:var(--ok)}
+.empty{color:var(--mute);padding:26px 4px;text-align:center}
+
+/* overlays */
+.ov{position:fixed;inset:0;z-index:50;background:var(--bg);overflow-y:auto;overscroll-behavior:contain;padding-top:env(safe-area-inset-top,0px)}
+.ovin{max-width:560px;margin:0 auto;padding:0 14px 120px}
+.ovhead{position:sticky;top:0;z-index:3;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0;background:var(--bg)}
+.back{display:flex;align-items:center;gap:2px;min-height:48px;padding-right:12px;font-weight:600;font-size:16px}
+.ovtitle{font:700 26px var(--fn)}
+.count{color:var(--mute);font:600 20px var(--fn)}
+.lname{font:700 36px/1.05 var(--fn);margin:4px 0 8px}
+.lrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.pill{display:inline-block;padding:3px 11px;border-radius:999px;background:var(--dc);color:var(--dci);font:600 15px var(--fn);letter-spacing:.02em}
+.ldate{color:var(--mute);font-size:14px}
+.menubtn{margin-left:auto}
+.last{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin:14px 0 18px}
+.lasthead{display:flex;justify-content:space-between;gap:8px;font-size:14px;color:var(--mute);margin-bottom:6px}
+.lasthead b{color:var(--ink);font-weight:600}
+.lastw{font:700 44px/1 var(--fn)}
+.lastw small{font:600 18px var(--fb);color:var(--mute);margin-left:6px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.chip{min-width:40px;padding:3px 9px;border-radius:10px;background:var(--soft);text-align:center;font:700 22px var(--fn)}
+.callout{margin-top:12px;padding:10px 12px;border-left:5px solid var(--dc);background:var(--soft);border-radius:6px 10px 10px 6px;font-size:15.5px}
+.tip{margin-top:12px;font-size:15px;color:var(--ok);font-weight:600}
+.lastact{display:flex;gap:8px;margin-top:6px}
+.lastact .btn{margin-top:8px}
+.first{color:var(--mute);font-size:15px}
+.sec{font-weight:600;font-size:16px;margin:0 0 8px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.tag{width:120px;height:38px;padding:0 10px;border:1.5px solid var(--line);border-radius:10px;background:var(--card);font-size:15px;text-align:center}
+.step{display:flex;align-items:center;gap:8px}
+.step>button{flex:0 0 56px;height:56px;border-radius:14px;background:var(--soft);border:1px solid var(--line);display:grid;place-items:center}
+.step svg.i{stroke-width:2.8}
+.step input{flex:1;min-width:0;width:100%;height:56px;text-align:center;font:700 36px var(--fn);background:var(--card);border:1.5px solid var(--line);border-radius:14px}
+.step input::placeholder{color:var(--mute);opacity:.5}
+.wbox .step>button{flex-basis:66px;height:76px}
+.wbox .step input{height:76px;font-size:56px}
+.winp{position:relative;flex:1;min-width:0}
+.winp span{position:absolute;right:14px;bottom:12px;color:var(--mute);font-weight:600;pointer-events:none}
+.hint{color:var(--mute);font-size:13.5px;margin-top:6px}
+.sets{margin-top:22px}
+.srow{display:grid;grid-template-columns:70px 1fr 50px;align-items:center;gap:8px;margin-bottom:10px}
+.slab{font-weight:600;color:var(--mute)}
+.kg{height:56px;border-radius:14px;border:1.5px dashed var(--line);color:var(--mute);font-weight:600;text-align:center;display:grid;place-items:center}
+.kg.on{border-style:solid;color:var(--ink)}
+.swrow{grid-column:1/-1;display:flex;align-items:center;gap:8px;margin:-2px 0 2px 78px}
+.swrow input{width:100px;height:46px;text-align:center;font:700 26px var(--fn);border:1.5px solid var(--line);border-radius:12px;background:var(--card)}
+.setacts{display:flex;gap:8px}
+.setacts button{flex:1;min-height:46px;border-radius:12px;border:1.5px solid var(--line);background:var(--card);font-weight:600;font-size:15px}
+textarea.note{width:100%;min-height:96px;margin-top:6px;padding:12px;border:1.5px solid var(--line);border-radius:14px;background:var(--card);font-size:16px;resize:vertical}
+.lbar{position:fixed;left:0;right:0;bottom:0;z-index:55;background:var(--card);border-top:1px solid var(--line);padding:10px 14px calc(10px + env(safe-area-inset-bottom,0px))}
+.lbin{display:flex;align-items:center;gap:10px;max-width:560px;margin:0 auto}
+.lbin .btn{margin:0;width:auto;flex:1}
+.lbin .navb{flex:0 0 56px;width:56px;padding:0}
+.saved{flex:0 0 auto;font-size:13px;color:var(--mute);min-width:74px;text-align:center}
+.saved.on{color:var(--ok);font-weight:600}
+
+/* history */
+.search{width:100%;height:48px;padding:0 14px;border:1.5px solid var(--line);border-radius:14px;background:var(--card);font-size:16px}
+.seg{display:flex;gap:6px;margin:10px 0}
+.seg button{flex:1;min-height:44px;border-radius:12px;border:1.5px solid var(--line);background:var(--card);font-weight:600;text-align:center}
+.seg button.on{background:var(--btn);color:var(--btnink);border-color:var(--btn)}
+.hrow{display:grid;grid-template-columns:1fr auto;gap:2px 10px;align-items:center;width:100%;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:8px}
+.hname{font-size:18px;font-weight:600;line-height:1.2}
+.hlast{grid-column:1;font-size:14.5px;color:var(--ink)}
+.hmeta{grid-column:1;font-size:13px;color:var(--mute)}
+.hspark{grid-column:2;grid-row:1/4;display:flex;flex-direction:column;align-items:flex-end;gap:2px;color:var(--ink)}
+.spark{width:70px;height:26px}
+.trend{font:600 15px var(--fn);color:var(--mute)}
+.trend.up{color:var(--ok)}
+.tiles{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:12px 0}
+.tile{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 10px 8px}
+.tile .tv{font:700 27px/1.05 var(--fn)}
+.tile .tv small{font:600 14px var(--fb);color:var(--mute);margin-left:3px}
+.tile .tl{font-size:12.5px;color:var(--mute);margin-top:2px}
+.chartbox{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 8px 4px;margin-bottom:14px}
+.chartbox svg{width:100%;height:auto;display:block}
+.ct{fill:var(--mute);font:600 10.5px var(--fb)}
+.ctitle{padding:2px 8px 0;font-weight:600;font-size:15px}
+.ctitle span{font-weight:400;font-size:13px;color:var(--mute);margin-left:4px}
+.cv{fill:var(--ink);font:700 12px var(--fn)}
+.sess{display:block;width:100%;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:11px 14px;margin-bottom:8px}
+.shead{font-size:13.5px;color:var(--mute)}
+.sbody{font-size:17px;font-weight:600;margin-top:2px}
+.sbody .num{font-size:22px}
+.snote{margin-top:6px;font-size:14.5px;padding:6px 9px;border-radius:8px;background:var(--soft)}
+
+/* weeks */
+.wrow{display:grid;grid-template-columns:48px repeat(5,1fr);gap:8px;align-items:center;margin-bottom:8px}
+.wrow.head{color:var(--mute);font-size:13px;font-weight:600;text-align:center}
+.wlab{font:700 20px var(--fn);color:var(--mute)}
+.wlab.cur{color:var(--ink)}
+.cell{height:40px;border-radius:50%;width:40px;margin:0 auto;border:4px solid var(--dc);background:var(--card)}
+.cell.part{background:color-mix(in srgb,var(--dc) 38%,var(--card))}
+.cell.done{background:var(--dc)}
+.cell.skip{border-style:dashed;opacity:.5}
+.cell.next{outline:2px solid var(--ink);outline-offset:3px}
+.legend{display:flex;gap:16px;flex-wrap:wrap;color:var(--mute);font-size:13.5px;margin:14px 0 4px}
+
+/* measures */
+.wchips{display:flex;gap:6px;overflow-x:auto;padding:4px 0 10px;scrollbar-width:none}
+.wchips button{flex:0 0 auto;min-width:46px;height:44px;border-radius:12px;border:1.5px solid var(--line);background:var(--card);font:700 19px var(--fn);text-align:center;position:relative}
+.wchips button.on{background:var(--btn);color:var(--btnink);border-color:var(--btn)}
+.wchips button.has::after{content:"";position:absolute;right:5px;top:5px;width:6px;height:6px;border-radius:50%;background:var(--d3)}
+.mgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.fld{display:block}
+.fld .fl{display:block;font-size:13.5px;font-weight:600;margin-bottom:3px}
+.fld input{width:100%;height:50px;padding:0 12px;border:1.5px solid var(--line);border-radius:12px;background:var(--card);font:700 24px var(--fn)}
+.fld input[type=date]{font:500 16px var(--fb)}
+.fld .fh{display:block;font-size:12.5px;color:var(--mute);margin-top:2px;min-height:17px}
+.fld.wide{grid-column:1/-1}
+.fld textarea{width:100%;min-height:64px;padding:10px 12px;border:1.5px solid var(--line);border-radius:12px;background:var(--card);font-size:16px}
+.tscroll{overflow-x:auto;border:1px solid var(--line);border-radius:14px;background:var(--card);margin-top:8px}
+table{border-collapse:collapse;width:100%;min-width:480px;font-variant-numeric:tabular-nums}
+th,td{padding:8px 10px;text-align:right;font-size:14.5px;border-bottom:1px solid var(--line)}
+th{font-weight:600;color:var(--mute);font-size:12.5px}
+th:first-child,td:first-child{text-align:left;font-weight:600}
+tr:last-child td{border-bottom:0}
+details.how{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-top:14px}
+details.how summary{font-weight:600;cursor:pointer;min-height:24px}
+details.how p{margin-top:8px;font-size:14.5px;color:var(--mute)}
+details.how p b{color:var(--ink)}
+
+/* data */
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin-bottom:12px}
+.card h3{font-size:17px;margin-bottom:6px}
+.card p{color:var(--mute);font-size:14.5px}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--mute);margin-right:6px}
+.dot.ok{background:var(--d3)}
+.dot.err{background:var(--danger)}
+.page-h{font:700 32px/1.05 var(--fn);margin:6px 0 12px}
+
+/* sheet + modal */
+.backdrop{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center}
+.sheet{width:100%;max-width:560px;max-height:86%;overflow-y:auto;background:var(--card);border-radius:20px 20px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom,0px))}
+.sheet h3{font:700 24px var(--fn);margin-bottom:10px}
+.menu button{display:flex;align-items:center;width:100%;min-height:52px;border-bottom:1px solid var(--line);font-size:17px;font-weight:500}
+.menu button:last-child{border-bottom:0}
+.menu .dz{color:var(--danger)}
+.plist{margin-top:8px}
+.plist button{display:block;width:100%;min-height:50px;padding:10px 4px;border-bottom:1px solid var(--line);font-size:17px}
+.plist button.new{font-weight:600}
+.chk{display:flex;align-items:center;gap:10px;margin:12px 0 4px;font-size:15px}
+.chk input{width:22px;height:22px}
+.modal{position:fixed;inset:0;z-index:70;background:rgba(0,0,0,.5);display:grid;place-items:center;padding:20px}
+.mcard{width:100%;max-width:420px;background:var(--card);border-radius:18px;padding:18px}
+.mcard h3{font:700 24px var(--fn);margin-bottom:6px}
+.mcard p{color:var(--mute);font-size:15px;margin-bottom:10px}
+.minput{width:100%;height:48px;padding:0 12px;border:1.5px solid var(--line);border-radius:12px;background:var(--card);font-size:17px;margin-top:4px}
+.mact{display:flex;gap:8px;margin-top:14px}
+.mact button{flex:1;min-height:48px;border-radius:12px;font-weight:600;text-align:center}
+.mact .ghost{border:1.5px solid var(--line)}
+.mact .primary{background:var(--btn);color:var(--btnink)}
+.mact .danger{background:var(--danger);color:#fff}
+textarea.copybox{width:100%;height:200px;font:13px monospace;border:1.5px solid var(--line);border-radius:10px;background:var(--soft);padding:8px}
+#toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--btn);color:var(--btnink);padding:10px 16px;border-radius:12px;z-index:90;opacity:0;pointer-events:none;transition:opacity .2s;max-width:88%;text-align:center;font-weight:600}
+#toast.on{opacity:1}
+@media (prefers-reduced-motion:reduce){#toast{transition:none}}
+</style>
+</head>
+<body>
+<main id="main"></main>
+<nav id="tabs" aria-label="Secciones"><div class="tin" id="tin"></div></nav>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+'use strict';
+var SEED = {"v":1,"mig":4,"updatedAt":0,"nweeks":23,"days":{"1-0":{"wk":1,"d":0,"block":"Cuádriceps + gemelos","ex":[{"id":"sentadilla-hack-squat","obj":"4x6-10"},{"id":"prensa","obj":"3x8-12"},{"id":"extension-de-cuadriceps-lunes","obj":"3x10-15"},{"id":"gemelos-sentado","obj":"3x10-15"}],"fin":false},"1-1":{"wk":1,"d":1,"block":"Torso mantenimiento","ex":[{"id":"press-banca","obj":"3x6-10"},{"id":"fondos","obj":"3x6-10"},{"id":"curl-biceps","obj":"2x8-12"},{"id":"triceps-polea","obj":"2x8-12"}],"fin":false},"1-2":{"wk":1,"d":2,"block":"Glúteos + femorales","ex":[{"id":"dominadas","obj":"4x8-12"},{"id":"remo","obj":"3x10-15"},{"id":"hip-thrust-miercoles","obj":"3x8-12"},{"id":"pull-over","obj":"2x10-15"}],"fin":false},"1-3":{"wk":1,"d":3,"block":"Torso + hombros","ex":[{"id":"press-militar","obj":"3x6-10"},{"id":"elevaciones-laterales","obj":"3x6-10"},{"id":"curl-biceps","obj":"2x8-12"},{"id":"triceps-polea","obj":"3x10-15"}],"fin":false},"1-4":{"wk":1,"d":4,"block":"Piernas completas","ex":[{"id":"prensa","obj":"3x8-12"},{"id":"hip-thrust-viernes","obj":"3x8-12"},{"id":"extension-de-cuadriceps-viernes","obj":"2x10-15"},{"id":"curl-femoral-viernes","obj":"2x10-15"},{"id":"gemelos-sentado","obj":"3x10-15"}],"fin":false},"2-0":{"wk":2,"d":0,"block":"Cuádriceps + gemelos","ex":[{"id":"sentadilla-hack-squat","obj":"4x6-10"},{"id":"prensa","obj":"3x8-12"},{"id":"extension-de-cuadriceps-lunes","obj":"3x10-15"},{"id":"gemelos-sentado","obj":"3x10-15"}],"fin":false},"2-1":{"wk":2,"d":1,"block":"Torso mantenimiento","ex":[{"id":"press-banca","obj":"3x6-10"},{"id":"dominadas","obj":"3x6-10"},{"id":"remo","obj":"2x8-12"},{"id":"curl-biceps","obj":"2x8-12"},{"id":"triceps-polea","obj":"2x8-12"}],"fin":false},"2-2":{"wk":2,"d":2,"block":"Glúteos + femorales","ex":[{"id":"hip-thrust-miercoles","obj":"4x8-12"},{"id":"curl-femoral-miercoles","obj":"3x10-15"},{"id":"bulgarian-split-squat","obj":"3x8-12"},{"id":"extension-lumbar-gluteo","obj":"2x10-15"}],"fin":false},"2-3":{"wk":2,"d":3,"block":"Torso + hombros","ex":[{"id":"press-militar","obj":"3x6-10"},{"id":"dominadas","obj":"3x6-10"},{"id":"press-inclinado","obj":"2x8-12"},{"id":"elevaciones-laterales","obj":"3x10-15"}],"fin":false},"2-4":{"wk":2,"d":4,"block":"Piernas completas","ex":[{"id":"prensa","obj":"3x8-12"},{"id":"hip-thrust-viernes","obj":"3x8-12"},{"id":"extension-de-cuadriceps-viernes","obj":"2x10-15"},{"id":"curl-femoral-viernes","obj":"2x10-15"},{"id":"gemelos-parado","obj":"3x10-15"}],"fin":false},"3-0":{"wk":3,"d":0,"block":"Cuádriceps + gemelos","ex":[{"id":"sentadilla-hack-squat","obj":"4x6-10"},{"id":"prensa","obj":"3x8-12"},{"id":"extension-de-cuadriceps-lunes","obj":"3x10-15"},{"id":"gemelos-sentado","obj":"3x10-15"}],"fin":false},"3-1":{"wk":3,"d":1,"block":"Torso mantenimiento","ex":[{"id":"press-banca","obj":"3x6-10"},{"id":"dominadas","obj":"3x6-10"},{"id":"remo","obj":"2x8-12"},{"id":"curl-biceps","obj":"2x8-12"},{"id":"triceps-polea","obj":"2x8-12"}],"fin":false},"3-2":{"wk":3,"d":2,"block":"Glúteos + femorales","ex":[{"id":"hip-thrust-miercoles","obj":"4x8-12"},{"id":"curl-femoral-miercoles","obj":"3x10-15"},{"id":"bulgarian-split-squat","obj":"3x8-12"},{"id":"extension-lumbar-gluteo","obj":"2x10-15"}],"fin":false},"3-3":{"wk":3,"d":3,"block":"Torso + hombros","ex":[{"id":"press-militar","obj":"3x6-10"},{"id":"dominadas","obj":"3x6-10"},{"id":"press-inclinado","obj":"2x8-12"},{"id":"elevaciones-laterales","obj":"3x10-15"}],"fin":false},"3-4":{"wk":3,"d":4,"block":"Piernas completas","ex":[{"id":"prensa","obj":"3x8-12"},{"id":"hip-thrust-viernes","obj":"3x8-12"},{"id":"extension-de-cuadriceps-viernes","obj":"2x10-15"},{"id":"curl-femoral-viernes","obj":"2x10-15"},{"id":"gemelos-parado","obj":"3x10-15"}],"fin":false},"4-0":{"wk":4,"d":0,"block":"Cuádriceps + gemelos","ex":[{"id":"sentadilla-hack-squat","obj":"4x6-10"},{"id":"prensa","obj":"3x8-12"},{"id":"extension-de-cuadriceps-lunes","obj":"3x10-15"},{"id":"gemelos-sentado","obj":"3x10-15"}],"fin":false},"4-1":{"wk":4,"d":1,"block":"Torso mantenimiento","ex":[{"id":"press-banca","obj":"3x6-10"},{"id":"dominadas","obj":"3x6-10"},{"id":"remo","obj":"2x8-12"},{"id":"curl-biceps","obj":"2x8-12"},{"id":"triceps-polea","obj":"2x8-12"}],"fin":false},"4-2":{"wk":4,"d":2,"block":"Glúteos + femorales","ex":[{"id":"hip-thrust-miercoles","obj":"4x8-12"},{"id":"curl-femoral-miercoles","obj":"3x10-15"},{"id":"peso-rumano","obj":"3x5-8"},{"id":"extension-lumbar-gluteo","obj":"2x10-15"}],"fin":false},"4-3":{"wk":4,"d":3,"block":"Torso + hombros","ex":[{"id":"press-militar","obj":"3x6-10"},{"id":"dominadas","obj":"3x6-10"},{"id":"press-inclinado","obj":"2x8-12"},{"id":"elevaciones-laterales","obj":"3x10-15"}],"fin":false},"4-4":{"wk":4,"d":4,"block":"Piernas completas","ex":[{"id":"prensa","obj":"3x8-12"},{"id":"hip-thrust-viernes","obj":"3x8-12"},{"id":"extension-de-cuadriceps-viernes","obj":"2x10-15"},{"id":"curl-femoral-viernes","obj":"2x10-15"},{"id":"gemelos-parado","obj":"3x10-15"}],"fin":false},"5-0":{"wk":5,"d":0,"block":"Cuádriceps + gemelos","ex":[{"id":"sentadilla-hack-squat","obj":"4x6-10"},{"id":"prensa","obj":"3x8-12"},{"id":"extension-de-cuadriceps-lunes","obj":"3x10-15"},{"id":"gemelos-sentado","obj":"3x10-15"}],"fin":false},"5-1":{"wk":5,"d":1,"block":"Torso mantenimiento","ex":[{"id":"press-banca","obj":"3x6-10"},{"id":"dominadas","obj":"3x6-10"},{"id":"remo","obj":"2x8-12"},{"id":"curl-biceps","obj":"2x8-12"},{"id":"triceps-polea","obj":"2x8-12"}],"fin":false},"5-2":{"wk":5,"d":2,"block":"Glúteos + femorales","ex":[{"id":"hip-thrust-miercoles","obj":"4x8-12"},{"id":"curl-femoral-miercoles","obj":"3x10-15"},{"id":"peso-rumano","obj":"3x5-8"},{"id":"extension-lumbar-gluteo","obj":"2x10-15"}],"fin":false},"5-3":{"wk":5,"d":3,"block":"Torso + hombros","ex":[{"id":"press-militar","obj":"3x6-10"},{"id":"dominadas","obj":"3x6-10"},{"id":"press-inclinado","obj":"2x8-12"},{"id":"elevaciones-laterales","obj":"3x10-15"}],"fin":false},"5-4":{"wk":5,"d":4,"block":"Piernas completas","ex":[{"id":"prensa","obj":"3x8-12"},{"id":"hip-thrust-viernes","obj":"3x8-12"},{"id":"extension-de-cuadriceps-viernes","obj":"2x10-15"},{"id":"curl-femoral-viernes","obj":"2x10-15"},{"id":"gemelos-parado","obj":"3x10-15"}],"fin":false},"6-0":{"wk":6,"d":0,"block":"Cuádriceps + gemelos","ex":[{"id":"sentadilla-hack-squat","obj":"4x6-10"},{"id":"prensa","obj":"3x8-12"},{"id":"extension-de-cuadriceps-lunes","obj":"3x10-15"},{"id":"gemelos-sentado","obj":"3x10-15"}],"fin":false},"6-1":{"wk":6,"d":1,"block":"Torso mantenimiento","ex":[{"id":"press-banca","obj":"3x6-10"},{"id":"dominadas","obj":"3x6-10"},{"id":"remo","obj":"2x8-12"},{"id":"curl-biceps","obj":"2x8-12"},{"id":"triceps-polea","obj":"2x8-12"}],"fin":false},"6-2":{"wk":6,"d":2,"block":"Glúteos + femorales","ex":[{"id":"hip-thrust-miercoles","obj":"4x8-12"},{"id":"curl-femoral-miercoles","obj":"3x10-15"},{"id":"peso-rumano","obj":"3x5-8"},{"id":"extension-lumbar-gluteo","obj":"2x10-15"}],"fin":false},"6-3":{"wk":6,"d":3,"block":"Torso + hombros","ex":[{"id":"press-militar","obj":"3x6-10"},{"id":"dominadas","obj":"3x6-10"},{"id":"press-inclinado","obj":"2x8-12"},{"id":"elevaciones-laterales","obj":"3x10-15"}],"fin":false},"6-4":{"wk":6,"d":4,"block":"Piernas completas","ex":[{"id":"prensa","obj":"3x8-12"},{"id":"hip-thrust-viernes","obj":"3x8-12"},{"id":"extension-de-cuadriceps-viernes","obj":"2x10-15"},{"id":"curl-femoral-viernes","obj":"2x10-15"},{"id":"gemelos-parado","obj":"3x10-15"}],"fin":false},"7-0":{"wk":7,"d":0,"block":"Cuádriceps + gemelos","ex":[{"id":"sentadilla-hack-squat","obj":"4x6-10"},{"id":"prensa","obj":"3x8-12"},{"id":"extension-de-cuadriceps-lunes","obj":"3x10-15"},{"id":"gemelos-sentado","obj":"3x10-15"}],"fin":false},"7-1":{"wk":7,"d":1,"block":"Torso mantenimiento","ex":[{"id":"press-banca","obj":"3x6-10"},{"id":"dominadas","obj":"3x6-10"},{"id":"remo","obj":"2x8-12"},{"id":"curl-biceps","obj":"2x8-12"},{"id":"triceps-polea","obj":"2x8-12"}],"fin":false},"7-2":{"wk":7,"d":2,"block":"Glúteos + femorales","ex":[{"id":"hip-thrust-miercoles","obj":"4x8-12"},{"id":"curl-femoral-miercoles","obj":"3x10-15"},{"id":"peso-rumano","obj":"3x5-8"},{"id":"extension-lumbar-gluteo","obj":"2x10-15"}],"fin":false},"7-3":{"wk":7,"d":3,"block":"Torso + hombros","ex":[{"id":"press-militar","obj":"3x6-10"},{"id":"dominadas","obj":"3x6-10"},{"id":"press-inclinado","obj":"2x8-12"},{"id":"elevaciones-laterales","obj":"3x10-15"}],"fin":false},"7-4":{"wk":7,"d":4,"block":"Piernas completas","ex":[{"id":"prensa","obj":"3x8-12"},{"id":"hip-thrust-viernes","obj":"3x8-12"},{"id":"extension-de-cuadriceps-viernes","obj":"2x10-15"},{"id":"curl-femoral-viernes","obj":"2x10-15"},{"id":"gemelos-parado","obj":"3x10-15"}],"fin":false},"8-0":{"wk":8,"d":0,"block":"Cuádriceps + gemelos","ex":[{"id":"sentadilla-hack-squat","obj":"4x6-10"},{"id":"prensa","obj":"3x8-12"},{"id":"extension-de-cuadriceps-lunes","obj":"3x10-15"},{"id":"gemelos-sentado","obj":"3x10-15"}],"fin":false},"8-1":{"wk":8,"d":1,"block":"Torso mantenimiento","ex":[{"id":"press-banca","obj":"3x6-10"},{"id":"dominadas","obj":"3x6-10"},{"id":"remo","obj":"2x8-12"},{"id":"curl-biceps","obj":"2x8-12"},{"id":"triceps-polea","obj":"2x8-12"}],"fin":false},"8-2":{"wk":8,"d":2,"block":"Glúteos + femorales","ex":[{"id":"hip-thrust-miercoles","obj":"4x8-12"},{"id":"curl-femoral-miercoles","obj":"3x10-15"},{"id":"peso-rumano","obj":"3x5-8"},{"id":"extension-lumbar-gluteo","obj":"2x10-15"}],"fin":false},"8-3":{"wk":8,"d":3,"block":"Torso + hombros","ex":[{"id":"press-militar","obj":"3x6-10"},{"id":"dominadas","obj":"3x6-10"},{"id":"press-inclinado","obj":"2x8-12"},{"id":"elevaciones-laterales","obj":"3x10-15"}],"fin":false},"8-4":{"wk":8,"d":4,"block":"Piernas completas","ex":[{"id":"prensa","obj":"3x8-12"},{"id":"hip-thrust-viernes","obj":"3x8-12"},{"id":"extension-de-cuadriceps-viernes","obj":"2x10-15"},{"id":"curl-femoral-viernes","obj":"2x10-15"},{"id":"gemelos-parado","obj":"3x10-15"}],"fin":false},"9-0":{"wk":9,"d":0,"block":"Cuádriceps + gemelos","ex":[{"id":"sentadilla-hack-squat","obj":"4x6-10"},{"id":"prensa","obj":"3x8-12"},{"id":"extension-de-cuadriceps-lunes","obj":"3x10-15"},{"id":"gemelos-sentado","obj":"3x10-15"}],"fin":false},"9-1":{"wk":9,"d":1,"block":"Torso mantenimiento","ex":[{"id":"press-banca","obj":"3x6-10"},{"id":"dominadas","obj":"3x6-10"},{"id":"remo","obj":"2x8-12"},{"id":"curl-biceps","obj":"2x8-12"},{"id":"triceps-polea","obj":"2x8-12"}],"fin":false},"9-2":{"wk":9,"d":2,"block":"Glúteos + femorales","ex":[{"id":"hip-thrust-miercoles","obj":"4x8-12"},{"id":"curl-femoral-miercoles","obj":"3x10-15"},{"id":"peso-rumano","obj":"3x5-8"},{"id":"extension-lumbar-gluteo","obj":"2x10-15"}],"fin":false},"9-3":{"wk":9,"d":3,"block":"Torso + hombros","ex":[{"id":"press-militar","obj":"3x6-10"},{"id":"dominadas","obj":"3x6-10"},{"id":"press-inclinado","obj":"2x8-12"},{"id":"elevaciones-laterales","obj":"3x10-15"}],"fin":false},"9-4":{"wk":9,"d":4,"block":"Piernas completas","ex":[{"id":"prensa","obj":"3x8-12"},{"id":"hip-thrust-viernes","obj":"3x8-12"},{"id":"extension-de-cuadriceps-viernes","obj":"2x10-15"},{"id":"curl-femoral-viernes","obj":"2x10-15"},{"id":"gemelos-parado","obj":"3x10-15"}],"fin":false},"10-0":{"wk":10,"d":0,"block":"Cuádriceps + gemelos","ex":[{"id":"sentadilla-hack-squat","obj":"4x6-10"},{"id":"prensa","obj":"3x8-12"},{"id":"extension-de-cuadriceps-lunes","obj":"3x10-15"},{"id":"gemelos-sentado","obj":"3x10-15"}],"fin":false},"10-1":{"wk":10,"d":1,"block":"Torso mantenimiento","ex":[{"id":"press-banca","obj":"3x6-10"},{"id":"dominadas","obj":"3x6-10"},{"id":"remo","obj":"2x8-12"},{"id":"curl-biceps","obj":"2x8-12"},{"id":"triceps-polea","obj":"2x8-12"}],"fin":false},"10-2":{"wk":10,"d":2,"block":"Glúteos + femorales","ex":[{"id":"hip-thrust-miercoles","obj":"4x8-12"},{"id":"curl-femoral-miercoles","obj":"3x10-15"},{"id":"peso-rumano","obj":"3x5-8"},{"id":"extension-lumbar-gluteo","obj":"2x10-15"}],"fin":false},"10-3":{"wk":10,"d":3,"block":"Torso + hombros","ex":[{"id":"press-militar","obj":"3x6-10"},{"id":"dominadas","obj":"3x6-10"},{"id":"press-inclinado","obj":"2x8-12"},{"id":"elevaciones-laterales","obj":"3x10-15"}],"fin":false},"10-4":{"wk":10,"d":4,"block":"Piernas completas","ex":[{"id":"prensa","obj":"3x8-12"},{"id":"hip-thrust-viernes","obj":"3x8-12"},{"id":"extension-de-cuadriceps-viernes","obj":"2x10-15"},{"id":"curl-femoral-viernes","obj":"2x10-15"},{"id":"gemelos-parado","obj":"3x10-15"}],"fin":false},"11-0":{"wk":11,"d":0,"block":"Cuádriceps + gemelos","ex":[{"id":"sentadilla-hack-squat","obj":"4x6-10"},{"id":"prensa","obj":"3x8-12"},{"id":"extension-de-cuadriceps-lunes","obj":"3x10-15"},{"id":"gemelos-sentado","obj":"3x10-15"}],"fin":false},"11-1":{"wk":11,"d":1,"block":"Torso mantenimiento","ex":[{"id":"press-banca","obj":"3x6-10"},{"id":"dominadas","obj":"3x6-10"},{"id":"remo","obj":"2x8-12"},{"id":"curl-biceps","obj":"2x8-12"},{"id":"triceps-polea","obj":"2x8-12"}],"fin":false},"11-2":{"wk":11,"d":2,"block":"Glúteos + femorales","ex":[{"id":"hip-thrust-miercoles","obj":"4x8-12"},{"id":"curl-femoral-miercoles","obj":"3x10-15"},{"id":"peso-rumano","obj":"3x5-8"},{"id":"extension-lumbar-gluteo","obj":"2x10-15"}],"fin":false},"11-3":{"wk":11,"d":3,"block":"Torso + hombros","ex":[{"id":"press-militar","obj":"3x6-10"},{"id":"dominadas","obj":"3x6-10"},{"id":"press-inclinado","obj":"2x8-12"},{"id":"elevaciones-laterales","obj":"3x10-15"}],"fin":false},"11-4":{"wk":11,"d":4,"block":"Piernas completas","ex":[{"id":"prensa","obj":"3x8-12"},{"id":"hip-thrust-viernes","obj":"3x8-12"},{"id":"extension-de-cuadriceps-viernes","obj":"2x10-15"},{"id":"curl-femoral-viernes","obj":"2x10-15"},{"id":"gemelos-parado","obj":"3x10-15"}],"fin":false},"12-0":{"wk":12,"d":0,"block":"Cuádriceps + gemelos","ex":[{"id":"sentadilla-hack-squat","obj":"4x6-10"},{"id":"prensa","obj":"3x8-12"},{"id":"extension-de-cuadriceps-lunes","obj":"3x10-15"},{"id":"gemelos-sentado","obj":"3x10-15"}],"fin":false},"12-1":{"wk":12,"d":1,"block":"Torso mantenimiento","ex":[{"id":"press-banca","obj":"3x6-10"},{"id":"dominadas","obj":"3x6-10"},{"id":"remo","obj":"2x8-12"},{"id":"curl-biceps","obj":"2x8-12"},{"id":"triceps-polea","obj":"2x8-12"}],"fin":false},"12-2":{"wk":12,"d":2,"block":"Glúteos + femorales","ex":[{"id":"hip-thrust-miercoles","obj":"4x8-12"},{"id":"curl-femoral-miercoles","obj":"3x10-15"},{"id":"peso-rumano","obj":"3x5-8"},{"id":"extension-lumbar-gluteo","obj":"2x10-15"}],"fin":false},"12-3":{"wk":12,"d":3,"block":"Torso + hombros","ex":[{"id":"press-militar","obj":"3x6-10"},{"id":"dominadas","obj":"3x6-10"},{"id":"press-inclinado","obj":"2x8-12"},{"id":"elevaciones-laterales","obj":"3x10-15"}],"fin":false},"12-4":{"wk":12,"d":4,"block":"Piernas completas","ex":[{"id":"prensa","obj":"3x8-12"},{"id":"hip-thrust-viernes","obj":"3x8-12"},{"id":"extension-de-cuadriceps-viernes","obj":"2x10-15"},{"id":"curl-femoral-viernes","obj":"2x10-15"},{"id":"gemelos-parado","obj":"3x10-15"}],"fin":false},"13-0":{"wk":13,"d":0,"block":"Cuádriceps + gemelos","ex":[{"id":"sentadilla-hack-squat","obj":"4x6-10"},{"id":"prensa","obj":"3x8-12"},{"id":"extension-de-cuadriceps-lunes","obj":"3x10-15"},{"id":"gemelos-sentado","obj":"3x10-15"}],"fin":false},"13-1":{"wk":13,"d":1,"block":"Torso mantenimiento","ex":[{"id":"press-banca","obj":"3x6-10"},{"id":"dominadas","obj":"3x6-10"},{"id":"remo","obj":"2x8-12"},{"id":"curl-biceps","obj":"2x8-12"},{"id":"triceps-polea","obj":"2x8-12"}],"fin":false},"13-2":{"wk":13,"d":2,"block":"Glúteos + femorales","ex":[{"id":"hip-thrust-miercoles","obj":"4x8-12"},{"id":"curl-femoral-miercoles","obj":"3x10-15"},{"id":"peso-rumano","obj":"3x5-8"},{"id":"extension-lumbar-gluteo","obj":"2x10-15"}],"fin":false},"13-3":{"wk":13,"d":3,"block":"Torso + hombros","ex":[{"id":"press-militar","obj":"3x6-10"},{"id":"dominadas","obj":"3x6-10"},{"id":"press-inclinado","obj":"2x8-12"},{"id":"elevaciones-laterales","obj":"3x10-15"}],"fin":false},"13-4":{"wk":13,"d":4,"block":"Piernas completas","ex":[{"id":"prensa","obj":"3x8-12"},{"id":"hip-thrust-viernes","obj":"3x8-12"},{"id":"extension-de-cuadriceps-viernes","obj":"2x10-15"},{"id":"curl-femoral-viernes","obj":"2x10-15"},{"id":"gemelos-parado","obj":"3x10-15"}],"fin":false},"14-0":{"wk":14,"d":0,"block":"Cuádriceps + gemelos","ex":[{"id":"sentadilla-hack-squat","obj":"4x6-10"},{"id":"prensa","obj":"3x8-12"},{"id":"extension-de-cuadriceps-lunes","obj":"3x10-15"},{"id":"gemelos-sentado","obj":"3x10-15"}],"fin":false},"14-1":{"wk":14,"d":1,"block":"Torso mantenimiento","ex":[{"id":"press-banca","obj":"3x6-10"},{"id":"dominadas","obj":"3x6-10"},{"id":"remo","obj":"2x8-12"},{"id":"curl-biceps","obj":"2x8-12"},{"id":"triceps-polea","obj":"2x8-12"}],"fin":false},"14-2":{"wk":14,"d":2,"block":"Glúteos + femorales","ex":[{"id":"hip-thrust-miercoles","obj":"4x8-12"},{"id":"curl-femoral-miercoles","obj":"3x10-15"},{"id":"peso-rumano","obj":"3x5-8"},{"id":"extension-lumbar-gluteo","obj":"2x10-15"}],"fin":false},"14-3":{"wk":14,"d":3,"block":"Torso + hombros","ex":[{"id":"press-militar","obj":"3x6-10"},{"id":"dominadas","obj":"3x6-10"},{"id":"press-inclinado","obj":"2x8-12"},{"id":"elevaciones-laterales","obj":"3x10-15"}],"fin":false},"14-4":{"wk":14,"d":4,"block":"Piernas completas","ex":[{"id":"prensa","obj":"3x8-12"},{"id":"hip-thrust-viernes","obj":"3x8-12"},{"id":"extension-de-cuadriceps-viernes","obj":"2x10-15"},{"id":"curl-femoral-viernes","obj":"2x10-15"},{"id":"gemelos-parado","obj":"3x10-15"}],"fin":false},"15-0":{"wk":15,"d":0,"block":"Cuádriceps + gemelos","ex":[{"id":"sentadilla-hack-squat","obj":"4x6-10"},{"id":"prensa","obj":"3x8-12"},{"id":"extension-de-cuadriceps-lunes","obj":"3x10-15"},{"id":"gemelos-sentado","obj":"3x10-15"}],"fin":false},"15-1":{"wk":15,"d":1,"block":"Torso mantenimiento","ex":[{"id":"press-banca","obj":"3x6-10"},{"id":"dominadas","obj":"3x6-10"},{"id":"remo","obj":"2x8-12"},{"id":"curl-biceps","obj":"2x8-12"},{"id":"triceps-polea","obj":"2x8-12"}],"fin":false},"15-2":{"wk":15,"d":2,"block":"Glúteos + femorales","ex":[{"id":"hip-thrust-miercoles","obj":"4x8-12"},{"id":"curl-femoral-miercoles","obj":"3x10-15"},{"id":"peso-rumano","obj":"3x5-8"},{"id":"extension-lumbar-gluteo","obj":"2x10-15"}],"fin":false},"15-3":{"wk":15,"d":3,"block":"Torso + hombros","ex":[{"id":"press-militar","obj":"3x6-10"},{"id":"dominadas","obj":"3x6-10"},{"id":"press-inclinado","obj":"2x8-12"},{"id":"elevaciones-laterales","obj":"3x10-15"}],"fin":false},"15-4":{"wk":15,"d":4,"block":"Piernas completas","ex":[{"id":"prensa","obj":"3x8-12"},{"id":"hip-thrust-viernes","obj":"3x8-12"},{"id":"extension-de-cuadriceps-viernes","obj":"2x10-15"},{"id":"curl-femoral-viernes","obj":"2x10-15"},{"id":"gemelos-parado","obj":"3x10-15"}],"fin":false},"16-0":{"wk":16,"d":0,"block":"Cuádriceps + gemelos","ex":[{"id":"sentadilla-hack-squat","obj":"4x6-10"},{"id":"prensa","obj":"3x8-12"},{"id":"extension-de-cuadriceps-lunes","obj":"3x10-15"},{"id":"gemelos-sentado","obj":"3x10-15"}],"fin":false},"16-1":{"wk":16,"d":1,"block":"Torso mantenimiento","ex":[{"id":"press-banca","obj":"3x6-10"},{"id":"dominadas","obj":"3x6-10"},{"id":"remo","obj":"2x8-12"},{"id":"curl-biceps","obj":"2x8-12"},{"id":"triceps-polea","obj":"2x8-12"}],"fin":false},"16-2":{"wk":16,"d":2,"block":"Glúteos + femorales","ex":[{"id":"hip-thrust-miercoles","obj":"4x8-12"},{"id":"curl-femoral-miercoles","obj":"3x10-15"},{"id":"peso-rumano","obj":"3x5-8"},{"id":"extension-lumbar-gluteo","obj":"2x10-15"}],"fin":false},"16-3":{"wk":16,"d":3,"block":"Torso + hombros","ex":[{"id":"press-militar","obj":"3x6-10"},{"id":"dominadas","obj":"3x6-10"},{"id":"press-inclinado","obj":"2x8-12"},{"id":"elevaciones-laterales","obj":"3x10-15"}],"fin":false},"16-4":{"wk":16,"d":4,"block":"Piernas completas","ex":[{"id":"prensa","obj":"3x8-12"},{"id":"hip-thrust-viernes","obj":"3x8-12"},{"id":"extension-de-cuadriceps-viernes","obj":"2x10-15"},{"id":"curl-femoral-viernes","obj":"2x10-15"},{"id":"gemelos-parado","obj":"3x10-15"}],"fin":false},"17-0":{"wk":17,"d":0,"block":"Cuádriceps + gemelos","ex":[{"id":"sentadilla-hack-squat","obj":"4x6-10"},{"id":"prensa","obj":"3x8-12"},{"id":"extension-de-cuadriceps-lunes","obj":"3x10-15"},{"id":"gemelos-sentado","obj":"3x10-15"}],"fin":false},"17-1":{"wk":17,"d":1,"block":"Torso mantenimiento","ex":[{"id":"press-banca","obj":"3x6-10"},{"id":"dominadas","obj":"3x6-10"},{"id":"remo","obj":"2x8-12"},{"id":"curl-biceps","obj":"2x8-12"},{"id":"triceps-polea","obj":"2x8-12"}],"fin":false},"17-2":{"wk":17,"d":2,"block":"Glúteos + femorales","ex":[{"id":"hip-thrust-miercoles","obj":"4x8-12"},{"id":"curl-femoral-miercoles","obj":"3x10-15"},{"id":"peso-rumano","obj":"3x5-8"},{"id":"extension-lumbar-gluteo","obj":"2x10-15"}],"fin":false},"17-3":{"wk":17,"d":3,"block":"Torso + hombros","ex":[{"id":"press-militar","obj":"3x6-10"},{"id":"dominadas","obj":"3x6-10"},{"id":"press-inclinado","obj":"2x8-12"},{"id":"elevaciones-laterales","obj":"3x10-15"}],"fin":false},"17-4":{"wk":17,"d":4,"block":"Piernas completas","ex":[{"id":"prensa","obj":"3x8-12"},{"id":"hip-thrust-viernes","obj":"3x8-12"},{"id":"extension-de-cuadriceps-viernes","obj":"2x10-15"},{"id":"curl-femoral-viernes","obj":"2x10-15"},{"id":"gemelos-parado","obj":"3x10-15"}],"fin":false},"18-0":{"wk":18,"d":0,"block":"Cuádriceps + gemelos","ex":[{"id":"sentadilla-hack-squat","obj":"4x6-10"},{"id":"prensa","obj":"3x8-12"},{"id":"extension-de-cuadriceps-lunes","obj":"3x10-15"},{"id":"gemelos-sentado","obj":"3x10-15"}],"fin":false},"18-1":{"wk":18,"d":1,"block":"Torso mantenimiento","ex":[{"id":"press-banca","obj":"3x6-10"},{"id":"dominadas","obj":"3x6-10"},{"id":"remo","obj":"2x8-12"},{"id":"curl-biceps","obj":"2x8-12"},{"id":"triceps-polea","obj":"2x8-12"}],"fin":false},"18-2":{"wk":18,"d":2,"block":"Glúteos + femorales","ex":[{"id":"hip-thrust-miercoles","obj":"4x8-12"},{"id":"curl-femoral-miercoles","obj":"3x10-15"},{"id":"peso-rumano","obj":"3x5-8"},{"id":"extension-lumbar-gluteo","obj":"2x10-15"}],"fin":false},"18-3":{"wk":18,"d":3,"block":"Torso + hombros","ex":[{"id":"press-militar","obj":"3x6-10"},{"id":"dominadas","obj":"3x6-10"},{"id":"press-inclinado","obj":"2x8-12"},{"id":"elevaciones-laterales","obj":"3x10-15"}],"fin":false},"18-4":{"wk":18,"d":4,"block":"Piernas completas","ex":[{"id":"prensa","obj":"3x8-12"},{"id":"hip-thrust-viernes","obj":"3x8-12"},{"id":"extension-de-cuadriceps-viernes","obj":"2x10-15"},{"id":"curl-femoral-viernes","obj":"2x10-15"},{"id":"gemelos-parado","obj":"3x10-15"}],"fin":false},"19-0":{"wk":19,"d":0,"block":"Cuádriceps + gemelos","ex":[{"id":"sentadilla-hack-squat","obj":"4x6-10"},{"id":"prensa","obj":"3x8-12"},{"id":"extension-de-cuadriceps-lunes","obj":"3x10-15"},{"id":"gemelos-sentado","obj":"3x10-15"}],"fin":false},"19-1":{"wk":19,"d":1,"block":"Torso mantenimiento","ex":[{"id":"press-banca","obj":"3x6-10"},{"id":"dominadas","obj":"3x6-10"},{"id":"remo","obj":"2x8-12"},{"id":"curl-biceps","obj":"2x8-12"},{"id":"triceps-polea","obj":"2x8-12"}],"fin":false},"19-2":{"wk":19,"d":2,"block":"Glúteos + femorales","ex":[{"id":"hip-thrust-miercoles","obj":"4x8-12"},{"id":"curl-femoral-miercoles","obj":"3x10-15"},{"id":"peso-rumano","obj":"3x5-8"},{"id":"extension-lumbar-gluteo","obj":"2x10-15"}],"fin":false},"19-3":{"wk":19,"d":3,"block":"Torso + hombros","ex":[{"id":"press-militar","obj":"3x6-10"},{"id":"dominadas","obj":"3x6-10"},{"id":"press-inclinado","obj":"2x8-12"},{"id":"elevaciones-laterales","obj":"3x10-15"}],"fin":false},"19-4":{"wk":19,"d":4,"block":"Piernas completas","ex":[{"id":"prensa","obj":"3x8-12"},{"id":"hip-thrust-viernes","obj":"3x8-12"},{"id":"extension-de-cuadriceps-viernes","obj":"2x10-15"},{"id":"curl-femoral-viernes","obj":"2x10-15"},{"id":"gemelos-parado","obj":"3x10-15"}],"fin":false},"20-0":{"wk":20,"d":0,"block":"Cuádriceps + gemelos","ex":[{"id":"sentadilla-hack-squat","obj":"4x6-10"},{"id":"prensa","obj":"3x8-12"},{"id":"extension-de-cuadriceps-lunes","obj":"3x10-15"},{"id":"gemelos-sentado","obj":"3x10-15"}],"fin":false},"20-1":{"wk":20,"d":1,"block":"Torso mantenimiento","ex":[{"id":"press-banca","obj":"3x6-10"},{"id":"dominadas","obj":"3x6-10"},{"id":"remo","obj":"2x8-12"},{"id":"curl-biceps","obj":"2x8-12"},{"id":"triceps-polea","obj":"2x8-12"}],"fin":false},"20-2":{"wk":20,"d":2,"block":"Glúteos + femorales","ex":[{"id":"hip-thrust-miercoles","obj":"4x8-12"},{"id":"curl-femoral-miercoles","obj":"3x10-15"},{"id":"peso-rumano","obj":"3x5-8"},{"id":"extension-lumbar-gluteo","obj":"2x10-15"}],"fin":false},"20-3":{"wk":20,"d":3,"block":"Torso + hombros","ex":[{"id":"press-militar","obj":"3x6-10"},{"id":"dominadas","obj":"3x6-10"},{"id":"press-inclinado","obj":"2x8-12"},{"id":"elevaciones-laterales","obj":"3x10-15"}],"fin":false},"20-4":{"wk":20,"d":4,"block":"Piernas completas","ex":[{"id":"prensa","obj":"3x8-12"},{"id":"hip-thrust-viernes","obj":"3x8-12"},{"id":"extension-de-cuadriceps-viernes","obj":"2x10-15"},{"id":"curl-femoral-viernes","obj":"2x10-15"},{"id":"gemelos-parado","obj":"3x10-15"}],"fin":false},"21-0":{"wk":21,"d":0,"block":"Cuádriceps + gemelos","ex":[{"id":"sentadilla-hack-squat","obj":"4x6-10"},{"id":"prensa","obj":"3x8-12"},{"id":"extension-de-cuadriceps-lunes","obj":"3x10-15"},{"id":"gemelos-sentado","obj":"3x10-15"}],"fin":false},"21-1":{"wk":21,"d":1,"block":"Torso mantenimiento","ex":[{"id":"press-banca","obj":"3x6-10"},{"id":"dominadas","obj":"3x6-10"},{"id":"remo","obj":"2x8-12"},{"id":"curl-biceps","obj":"2x8-12"},{"id":"triceps-polea","obj":"2x8-12"}],"fin":false},"21-2":{"wk":21,"d":2,"block":"Glúteos + femorales","ex":[{"id":"hip-thrust-miercoles","obj":"4x8-12"},{"id":"curl-femoral-miercoles","obj":"3x10-15"},{"id":"peso-rumano","obj":"3x5-8"},{"id":"extension-lumbar-gluteo","obj":"2x10-15"}],"fin":false},"21-3":{"wk":21,"d":3,"block":"Torso + hombros","ex":[{"id":"press-militar","obj":"3x6-10"},{"id":"dominadas","obj":"3x6-10"},{"id":"press-inclinado","obj":"2x8-12"},{"id":"elevaciones-laterales","obj":"3x10-15"}],"fin":false},"21-4":{"wk":21,"d":4,"block":"Piernas completas","ex":[{"id":"prensa","obj":"3x8-12"},{"id":"hip-thrust-viernes","obj":"3x8-12"},{"id":"extension-de-cuadriceps-viernes","obj":"2x10-15"},{"id":"curl-femoral-viernes","obj":"2x10-15"},{"id":"gemelos-parado","obj":"3x10-15"}],"fin":false},"22-0":{"wk":22,"d":0,"block":"Cuádriceps + gemelos","ex":[{"id":"sentadilla-hack-squat","obj":"4x6-10"},{"id":"prensa","obj":"3x8-12"},{"id":"extension-de-cuadriceps-lunes","obj":"3x10-15"},{"id":"gemelos-sentado","obj":"3x10-15"}],"fin":false},"22-1":{"wk":22,"d":1,"block":"Torso mantenimiento","ex":[{"id":"press-banca","obj":"3x6-10"},{"id":"dominadas","obj":"3x6-10"},{"id":"remo","obj":"2x8-12"},{"id":"curl-biceps","obj":"2x8-12"},{"id":"triceps-polea","obj":"2x8-12"}],"fin":false},"22-2":{"wk":22,"d":2,"block":"Glúteos + femorales","ex":[{"id":"hip-thrust-miercoles","obj":"4x8-12"},{"id":"curl-femoral-miercoles","obj":"3x10-15"},{"id":"peso-rumano","obj":"3x5-8"},{"id":"extension-lumbar-gluteo","obj":"2x10-15"}],"fin":false},"22-3":{"wk":22,"d":3,"block":"Torso + hombros","ex":[{"id":"press-militar","obj":"3x6-10"},{"id":"dominadas","obj":"3x6-10"},{"id":"press-inclinado","obj":"2x8-12"},{"id":"elevaciones-laterales","obj":"3x10-15"}],"fin":false},"22-4":{"wk":22,"d":4,"block":"Piernas completas","ex":[{"id":"prensa","obj":"3x8-12"},{"id":"hip-thrust-viernes","obj":"3x8-12"},{"id":"extension-de-cuadriceps-viernes","obj":"2x10-15"},{"id":"curl-femoral-viernes","obj":"2x10-15"},{"id":"gemelos-parado","obj":"3x10-15"}],"fin":false},"23-0":{"wk":23,"d":0,"block":"Cuádriceps + gemelos","ex":[{"id":"sentadilla-hack-squat","obj":"4x6-10"},{"id":"prensa","obj":"3x8-12"},{"id":"extension-de-cuadriceps-lunes","obj":"3x10-15"},{"id":"gemelos-sentado","obj":"3x10-15"}],"fin":false},"23-1":{"wk":23,"d":1,"block":"Torso mantenimiento","ex":[{"id":"press-banca","obj":"3x6-10"},{"id":"dominadas","obj":"3x6-10"},{"id":"remo","obj":"2x8-12"},{"id":"curl-biceps","obj":"2x8-12"},{"id":"triceps-polea","obj":"2x8-12"}],"fin":false},"23-2":{"wk":23,"d":2,"block":"Glúteos + femorales","ex":[{"id":"hip-thrust-miercoles","obj":"4x8-12"},{"id":"curl-femoral-miercoles","obj":"3x10-15"},{"id":"peso-rumano","obj":"3x5-8"},{"id":"extension-lumbar-gluteo","obj":"2x10-15"}],"fin":false},"23-3":{"wk":23,"d":3,"block":"Torso + hombros","ex":[{"id":"press-militar","obj":"3x6-10"},{"id":"dominadas","obj":"3x6-10"},{"id":"press-inclinado","obj":"2x8-12"},{"id":"elevaciones-laterales","obj":"3x10-15"}],"fin":false},"23-4":{"wk":23,"d":4,"block":"Piernas completas","ex":[{"id":"prensa","obj":"3x8-12"},{"id":"hip-thrust-viernes","obj":"3x8-12"},{"id":"extension-de-cuadriceps-viernes","obj":"2x10-15"},{"id":"curl-femoral-viernes","obj":"2x10-15"},{"id":"gemelos-parado","obj":"3x10-15"}],"fin":false}},"names":{"sentadilla-hack-squat":"Sentadilla / Hack squat","prensa":"Prensa","gemelos-sentado":"Gemelos sentado","press-banca":"Press banca","fondos":"Fondos","curl-biceps":"Curl bíceps","triceps-polea":"Tríceps polea","dominadas":"Dominadas","remo":"Remo","pull-over":"Pull-over","press-militar":"Press militar","elevaciones-laterales":"Elevaciones laterales","bulgarian-split-squat":"Bulgarian split squat","extension-lumbar-gluteo":"Extensión lumbar / glúteo","press-inclinado":"Press inclinado","gemelos-parado":"Gemelos parado","peso-rumano":"Peso rumano","hip-thrust-miercoles":"Hip thrust (miércoles)","hip-thrust-viernes":"Hip thrust (viernes)","curl-femoral-miercoles":"Curl femoral (miércoles)","curl-femoral-viernes":"Curl femoral (viernes)","extension-de-cuadriceps-lunes":"Extensión de cuádriceps (lunes)","extension-de-cuadriceps-viernes":"Extensión de cuádriceps (viernes)"},"meas":{},"settings":{"step":2.5,"skip":[1]}};
+
+/* ---------- utils ---------- */
+var DAYN=['Lunes','Martes','Miércoles','Jueves','Viernes'], DAYS=['Lun','Mar','Mié','Jue','Vie'];
+var MON=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function fn(n){ if(n==null||n==='') return ''; return String(Math.round(n*100)/100).replace('.',','); }
+function num(s){ if(s==null) return null; s=String(s).trim().replace(',','.'); if(s==='') return null; var v=parseFloat(s); return isNaN(v)?null:v; }
+function norm(s){ return String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
+function slug(s){ return norm(s).replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,''); }
+function clone(o){ return JSON.parse(JSON.stringify(o)); }
+function todayISO(){ var d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function fmtDate(iso){ if(!iso) return ''; var p=iso.split('-'); if(p.length<3) return iso; return (+p[2])+' '+MON[+p[1]-1]; }
+function trunc(s,n){ s=String(s||''); return s.length>n? s.slice(0,n-1).trim()+'…' : s; }
+function $(s){ return document.querySelector(s); }
+var ICONS={
+  up:'<path d="M12 19V5M5 12l7-7 7 7"/>', left:'<path d="M15 5l-7 7 7 7"/>', right:'<path d="M9 5l7 7-7 7"/>', check:'<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+  plus:'<path d="M12 5v14M5 12h14"/>', minus:'<path d="M5 12h14"/>',
+  more:'<circle cx="5" cy="12" r="1.7" fill="currentColor"/><circle cx="12" cy="12" r="1.7" fill="currentColor"/><circle cx="19" cy="12" r="1.7" fill="currentColor"/>',
+  train:'<path d="M6 8v8M3.5 10v4M18 8v8M20.5 10v4M6 12h12"/>',
+  hist:'<path d="M4 19V5M4 19h16M8 15l4-5 3 3 4-6"/>',
+  meas:'<rect x="3" y="8" width="18" height="8" rx="1.5"/><path d="M7 8v3M11 8v4M15 8v3M19 8v4"/>',
+  data:'<ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v12c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12c0 1.7 3.1 3 7 3s7-1.3 7-3"/>'
+};
+function I(n){ return '<svg class="i" viewBox="0 0 24 24" aria-hidden="true">'+ICONS[n]+'</svg>'; }
+
+/* ---------- state ---------- */
+var LS='gymlog.v1', THEME_LS='gymlog.theme';
+var S=null, localOK=true;
+function loadLocal(){ try{ var t=localStorage.getItem(LS); if(t){ var o=JSON.parse(t); if(o&&o.v===1&&o.days) return o; } }catch(e){} return null; }
+function saveLocal(){ try{ localStorage.setItem(LS,JSON.stringify(S)); localOK=true; }catch(e){ localOK=false; } }
+S = loadLocal() || clone(SEED);
+if(!S.settings) S.settings={step:2.5};
+if(!S.meas) S.meas={};
+
+/* ---------- plan migrations (run once per dataset, safe on old saved data) ---------- */
+var MIG=4;
+function migrate(st){
+  var v=st.mig||1; if(v>=MIG) return false;
+  if(v<2) migrate2(st);
+  if(v<3) migrate3(st);
+  if(v<4) migrate4(st);
+  st.mig=MIG; return true;
+}
+function migrate2(st){
+  var N=st.names||(st.names={}), used={};
+  Object.keys(st.days).forEach(function(k){
+    var day=st.days[k], out=[];
+    day.ex.forEach(function(e){
+      if(e.id==='hip-thrust'){
+        if(day.d===2) e.id='hip-thrust-miercoles'; else if(day.d===4) e.id='hip-thrust-viernes';
+      } else if(e.id==='dominadas-jalon'){
+        e.id='dominadas'; if(e.w===0 && !e.tag) e.w=null;
+      } else if(e.id==='bulgarian-split-squat' && day.wk>=5 && !hasData(e)){
+        if(day.ex.some(function(x){ return x.id==='peso-rumano'; })) return; /* ya estaba Peso rumano: se quita el Bulgarian */
+        e.id='peso-rumano'; e.obj='3x5-8';
+      }
+      out.push(e);
+    });
+    day.ex=out;
+    out.forEach(function(e){ used[e.id]=1; });
+  });
+  if(used['hip-thrust-miercoles']) N['hip-thrust-miercoles']='Hip thrust (miércoles)';
+  if(used['hip-thrust-viernes']) N['hip-thrust-viernes']='Hip thrust (viernes)';
+  if(used['dominadas']) N['dominadas']='Dominadas';
+  if(used['peso-rumano'] && !N['peso-rumano']) N['peso-rumano']='Peso rumano';
+  ['hip-thrust','dominadas-jalon'].forEach(function(id){ if(!used[id]) delete N[id]; });
+}
+/* v3: ejercicios que se repiten en dos días de la misma semana con distinta cantidad de series */
+var SPLITS={
+  'curl-femoral':{2:['curl-femoral-miercoles','Curl femoral (miércoles)'],4:['curl-femoral-viernes','Curl femoral (viernes)']},
+  'extension-de-cuadriceps':{0:['extension-de-cuadriceps-lunes','Extensión de cuádriceps (lunes)'],4:['extension-de-cuadriceps-viernes','Extensión de cuádriceps (viernes)']}
+};
+/* v4: los datos de la semana 1 se guardan pero no cuentan en historial ni estadísticas */
+function migrate4(st){ if(!st.settings) st.settings={step:2.5}; st.settings.skip=[1]; }
+function migrate3(st){
+  var N=st.names||(st.names={}), used={};
+  Object.keys(st.days).forEach(function(k){
+    var day=st.days[k];
+    day.ex.forEach(function(e){
+      var m=SPLITS[e.id]; if(m&&m[day.d]) e.id=m[day.d][0];
+      used[e.id]=1;
+    });
+  });
+  Object.keys(SPLITS).forEach(function(old){
+    Object.keys(SPLITS[old]).forEach(function(d){ var r=SPLITS[old][d]; if(used[r[0]]) N[r[0]]=r[1]; });
+    if(!used[old]) delete N[old];
+  });
+}
+
+var ui={tab:'train',wk:1,d:0,hist:{q:'',sort:'recent'},mwk:1,cur:null,openW:{},stack:[],pick:null,sync:{state:'local',at:null},theme:'auto'};
+function seq(){ var a=[]; for(var w=1;w<=S.nweeks;w++) for(var d=0;d<5;d++) a.push(w+'-'+d); return a; }
+function idxOf(k){ var p=k.split('-'); return (+p[0]-1)*5+(+p[1]); }
+function hasData(e){ return !!(e && ((e.sets||[]).some(function(s){return s.r!=null;}) || (e.note&&String(e.note).trim()))); }
+function dayHasData(day){ return !!day && day.ex.some(hasData); }
+function dayComplete(day){ return !!day && (day.fin || (day.ex.length>0 && day.ex.every(hasData))); }
+function cursor(){
+  var s=seq(), last=-1;
+  s.forEach(function(k,i){ var dd=S.days[k]; if(dayHasData(dd)||(dd&&dd.fin)) last=i; });
+  if(last<0) return 0;
+  return dayComplete(S.days[s[last]]) ? Math.min(last+1,s.length-1) : last;
+}
+function dayState(k){
+  var dd=S.days[k]; if(!dd) return '';
+  var cs=cursor();
+  if(dayComplete(dd)) return 'done';
+  if(dayHasData(dd)) return 'part';
+  if(idxOf(k)<cs) return 'skip';
+  if(idxOf(k)===cs) return 'next';
+  return '';
+}
+function commit(){ S.updatedAt=Date.now(); saveLocal(); queuePush(); flashSaved(); }
+
+/* ---------- exercise helpers ---------- */
+function exName(id){ return S.names[id]||id; }
+function parseObj(o){ var m=String(o||'').match(/^\s*(\d+)\s*[x×]\s*(\d+)(?:\s*[-–]\s*(\d+))?\s*$/i); if(!m) return null; return {n:+m[1],min:+m[2],max:m[3]?+m[3]:+m[2]}; }
+function objTxt(o){ var r=parseObj(o); if(!r) return o||''; return r.min===r.max ? r.n+' × '+r.min : r.n+' × '+r.min+'–'+r.max; }
+function setsOf(e){ return (e.sets||[]).filter(function(s){return s.r!=null;}); }
+function wtxt(e){ return e.w==null ? 'Peso corporal' : fn(e.w)+' kg'+(e.tag?' '+e.tag:''); }
+function repsTxt(e){ return setsOf(e).map(function(s){ return (s.w!=null && s.w!==e.w) ? s.r+'@'+fn(s.w) : String(s.r); }).join(' · '); }
+function sumReps(e){ return setsOf(e).reduce(function(a,s){return a+s.r;},0); }
+function topW(e){ var v=[]; if(e.w!=null) v.push(e.w); (e.sets||[]).forEach(function(s){ if(s.w!=null) v.push(s.w); }); return v.length?Math.max.apply(null,v):null; }
+function skipped(wk){ var sk=(S.settings&&S.settings.skip)||[]; return sk.indexOf(wk)>=0; }
+function histOf(id,all){
+  var out=[]; seq().forEach(function(k){ var day=S.days[k]; if(!day) return; if(!all&&skipped(day.wk)) return; day.ex.forEach(function(e,i){ if(e.id===id && hasData(e)) out.push({k:k,wk:day.wk,d:day.d,date:day.date,e:e,i:i}); }); });
+  return out;
+}
+function prevOf(id,k){ var idx=idxOf(k), res=null; histOf(id).forEach(function(h){ if(idxOf(h.k)<idx) res=h; }); return res; }
+function prevFlag(id,k){
+  var idx=idxOf(k), dd=+k.split('-')[1], res=null; /* mismo ejercicio, mismo día de la semana anterior */
+  seq().forEach(function(kk){ if(idxOf(kk)>=idx) return; var day=S.days[kk]; if(!day||day.d!==dd) return; day.ex.forEach(function(e,i){ if(e.id===id&&(hasData(e)||e.up)) res={k:kk,wk:day.wk,d:day.d,date:day.date,e:e,i:i}; }); });
+  return (res&&res.e.up)?res:null;
+}
+function upBase(pf){ var w=pf.e.w; if(w==null){ var p=prevOf(pf.e.id,pf.k); w=p&&p.e.w!=null?p.e.w:null; } return w; }
+function upTarget(pf){ var w=upBase(pf); return w==null?null:Math.round((w+(S.settings.step||2.5))*100)/100; }
+function upDone(e,pf){ var b=upBase(pf); return hasData(e)&&b!=null&&e.w!=null&&e.w>b; }
+function upLine(e,pf){ if(upDone(e,pf)) return 'Subiste a '+fn(e.w)+' kg'; var t=upTarget(pf); return t!=null?'Subir peso · probá '+fn(t)+' kg':'Subir peso o dificultad'; }
+function upBannerHTML(e,pf){
+  if(!pf) return ''; var okk=upDone(e,pf);
+  return '<div class="upbanner'+(okk?' okk':'')+'"><b>'+I(okk?'check':'up')+(okk?'Ya subiste el peso':'Subir peso hoy')+'</b><span>'+(okk?esc(upLine(e,pf))+' (antes '+fn(upBase(pf))+' kg).':'Lo marcaste en '+esc(sessLabel(pf))+'. '+(upTarget(pf)!=null?'Probá con '+fn(upTarget(pf))+' kg.':'Probá una carga o variante más difícil.'))+'</span></div>';
+}
+function refreshUpBanner(){ var el=document.getElementById('upb'); if(!el||!ui.cur) return; el.innerHTML=upBannerHTML(curE(),prevFlag(curE().id,ui.cur.k)); }
+function usesWeight(h){ return h.some(function(x){ var t=topW(x.e); return t!=null && t>0; }); }
+function metric(e,useW){ if(useW){ var t=topW(e); return t==null?0:t; } return sumReps(e); }
+function sessLabel(h){ return 'Sem '+h.wk+' · '+DAYN[h.d]+(h.date?' · '+fmtDate(h.date):''); }
+function suggest(prev,obj){
+  if(!prev) return null; var r=parseObj(obj); if(!r) return null;
+  var sets=setsOf(prev.e); if(sets.length<r.n) return null;
+  if(!sets.every(function(s){ return s.r>=r.max; })) return null;
+  if(prev.e.w==null) return 'Llegaste a '+r.max+' reps en todas las series. Probá una variante más difícil o sumar carga.';
+  return 'Llegaste a '+r.max+' reps en todas las series. Probá subir a '+fn(Math.round((prev.e.w+(S.settings.step||2.5))*100)/100)+' kg.';
+}
+
+/* ---------- render: main ---------- */
+var TABS=[['train','Entrenar'],['hist','Historial'],['meas','Medidas'],['data','Datos']];
+function renderTabs(){
+  $('#tin').innerHTML=TABS.map(function(t){ return '<button class="tab'+(ui.tab===t[0]?' on':'')+'" data-a="tab" data-v="'+t[0]+'" aria-label="'+t[1]+'">'+I(t[0])+'<span>'+t[1]+'</span></button>'; }).join('');
+}
+function render(){
+  renderTabs();
+  var f={train:renderTrain,hist:renderHist,meas:renderMeas,data:renderData}[ui.tab]; f();
+}
+function dayStyle(d){ return '--dc:var(--d'+d+');--dci:var(--d'+d+'i)'; }
+
+function renderTrain(){
+  var k=ui.wk+'-'+ui.d, day=S.days[k], cs=cursor(), curK=seq()[cs];
+  var h='<div class="top"><button class="ic" data-a="wk" data-v="-1" aria-label="Semana anterior">'+I('left')+'</button>'+
+    '<button class="wtitle" data-a="weeks"><span class="num">Semana '+ui.wk+'</span><span class="sub">de '+S.nweeks+' · ver el plan completo</span>'+(skipped(ui.wk)?'<span class="sub" style="color:var(--ink);font-weight:600">No cuenta en el historial</span>':'')+'</button>'+
+    '<button class="ic" data-a="wk" data-v="1" aria-label="Semana siguiente">'+I('right')+'</button></div>';
+  h+='<div class="plates">'+DAYS.map(function(n,d){ var st=dayState(ui.wk+'-'+d); return '<button class="plate '+st+(d===ui.d?' sel':'')+'" style="'+dayStyle(d)+'" data-a="day" data-v="'+d+'" aria-label="'+DAYN[d]+'">'+n+'</button>'; }).join('')+'</div>';
+  if(!day){ $('#main').innerHTML=h+'<p class="empty">No hay entrenamiento cargado para este día.</p>'; return; }
+  var done=day.ex.filter(hasData).length;
+  h+='<div class="dayhead" style="'+dayStyle(ui.d)+'"><div><div class="dtitle">'+DAYN[ui.d]+(k===curK&&!dayHasData(day)?'<span class="chipnext">Próximo</span>':'')+'</div><div class="dblock">'+esc(day.block||'')+'</div>'+(function(){ var c=day.ex.filter(function(x){ var q=prevFlag(x.id,k); return q&&!upDone(x,q); }).length; return c?'<span class="upcount">↑ '+c+(c===1?' ejercicio para subir peso':' ejercicios para subir peso')+'</span>':''; })()+'</div><div class="dprog num">'+done+'/'+day.ex.length+'</div></div>';
+  h+='<div class="list" style="'+dayStyle(ui.d)+'">';
+  day.ex.forEach(function(e,i){
+    var prev=prevOf(e.id,k), dn=hasData(e), pf=prevFlag(e.id,k);
+    h+='<button class="ex'+(dn?' done':'')+(pf&&!upDone(e,pf)?' up':'')+'" data-a="open" data-v="'+i+'"><span class="exname">'+esc(exName(e.id))+'</span><span class="exobj">'+esc(objTxt(e.obj))+'</span>'+
+      '<span class="exlast">'+(prev?'<b>Última</b> '+esc(wtxt(prev.e))+' · '+esc(repsTxt(prev.e)):'Primera vez')+'</span>'+
+      (dn&&setsOf(e).length?'<span class="extoday"><b>Hoy</b> '+esc(wtxt(e))+' · '+esc(repsTxt(e))+'</span>':'')+
+      (pf?'<span class="exup'+(upDone(e,pf)?' okk':'')+'">'+I(upDone(e,pf)?'check':'up')+esc(upLine(e,pf))+'</span>':'')+
+      (e.up?'<span class="exmark">↑ Marcado para subir la próxima vez</span>':'')+
+      (prev&&prev.e.note&&!dn?'<span class="exnote">“'+esc(trunc(prev.e.note,80))+'”</span>':'')+
+      '<span class="excheck">'+(dn?I('check'):'')+'</span></button>';
+  });
+  h+='</div>';
+  h+='<button class="btn line small" data-a="add">'+I('plus')+' Agregar ejercicio</button>';
+  if(day.fin){ h+='<p class="fin">'+I('check')+' Entrenamiento terminado</p><button class="btn line small" data-a="reopen">Volver a abrir</button>'; }
+  else if(done>0){ h+='<button class="btn primary" data-a="finish">Terminar entrenamiento</button>'; }
+  $('#main').innerHTML=h;
+}
+
+/* ---------- overlays ---------- */
+var RENDER={};
+function pushOverlay(id){
+  var el=document.createElement('div'); el.className='ov'; el.id=id; el.innerHTML='<div class="ovin"></div>';
+  document.body.appendChild(el); ui.stack.push(id); RENDER[id]();
+  document.body.style.overflow='hidden';
+}
+function refreshTop(){ if(!ui.stack.length){ document.body.style.overflow=''; render(); } else RENDER[ui.stack[ui.stack.length-1]](); }
+function popOverlay(){ var id=ui.stack.pop(); var el=document.getElementById(id); if(el) el.remove(); refreshTop(); }
+function closeAll(){ while(ui.stack.length){ var id=ui.stack.pop(); var el=document.getElementById(id); if(el) el.remove(); } document.body.style.overflow=''; }
+function ovBody(id){ var el=document.getElementById(id); return el?el.querySelector('.ovin'):null; }
+
+/* logger */
+function curDay(){ return S.days[ui.cur.k]; }
+function curE(){ return curDay().ex[ui.cur.i]; }
+function ensureSets(e,j){ e.sets=e.sets||[]; while(e.sets.length<=j) e.sets.push({r:null}); }
+function openLogger(k,i){
+  ui.cur={k:k,i:i}; ui.openW={};
+  if(document.getElementById('logger')){ RENDER.logger(); document.getElementById('logger').scrollTop=0; }
+  else pushOverlay('logger');
+}
+RENDER.logger=function(){
+  var body=ovBody('logger'); if(!body||!ui.cur) return;
+  var k=ui.cur.k, day=S.days[k], e=day.ex[ui.cur.i], prev=prevOf(e.id,k), r=parseObj(e.obj);
+  var n=Math.max(r?r.n:3,(e.sets||[]).length,1);
+  var h='<div class="ovhead"><button class="back" data-a="close">'+I('left')+' '+DAYS[day.d]+' · Sem '+day.wk+'</button><span class="count num">'+(ui.cur.i+1)+' / '+day.ex.length+'</span></div>';
+  h+='<div style="'+dayStyle(day.d)+'"><h1 class="lname">'+esc(exName(e.id))+'</h1><div class="lrow"><span class="pill">Objetivo '+esc(objTxt(e.obj))+'</span><button class="ic menubtn" data-a="menu" aria-label="Más opciones">'+I('more')+'</button></div>';
+  var pfl=prevFlag(e.id,k);
+  h+='<div id="upb">'+upBannerHTML(e,pfl)+'</div>';
+  if(prev){
+    var tip=prevFlag(e.id,k)?null:suggest(prev,e.obj);
+    h+='<section class="last"><div class="lasthead"><b>Última vez</b><span>'+esc(sessLabel(prev))+'</span></div>'+
+      '<div class="lastw num">'+(prev.e.w==null?'<small style="margin:0">Peso corporal</small>':fn(prev.e.w)+'<small>kg'+(prev.e.tag?' '+esc(prev.e.tag):'')+'</small>')+'</div>'+
+      '<div class="chips">'+setsOf(prev.e).map(function(s){ return '<span class="chip">'+s.r+((s.w!=null&&s.w!==prev.e.w)?'<small style="font-size:13px"> @'+fn(s.w)+'</small>':'')+'</span>'; }).join('')+'</div>'+
+      (prev.e.note?'<div class="callout">'+esc(prev.e.note)+'</div>':'')+
+      (tip?'<div class="tip">'+esc(tip)+'</div>':'')+
+      '<div class="lastact"><button class="btn primary small" data-a="copy">Usar mismos valores</button><button class="btn line small" data-a="hist" data-v="'+esc(e.id)+'">Historial</button></div></section>';
+  } else {
+    h+='<section class="last"><div class="lasthead"><b>Primera vez</b></div><p class="first">Todavía no hay registros de este ejercicio. Lo que cargues hoy va a aparecer la próxima vez.</p></section>';
+  }
+  var pw=prev&&prev.e.w!=null?fn(prev.e.w):'';
+  h+='<div class="wbox"><div class="sec"><span>Peso</span><input class="tag" data-i="tag" value="'+esc(e.tag||'')+'" placeholder="c/lado, polea…" aria-label="Aclaración del peso"></div>'+
+    '<div class="step"><button data-a="wstep" data-v="-1" aria-label="Bajar peso">'+I('minus')+'</button><div class="winp"><input data-i="w" inputmode="decimal" autocomplete="off" value="'+fn(e.w)+'" placeholder="'+(pw||'—')+'" aria-label="Peso en kilos"><span>kg</span></div><button data-a="wstep" data-v="1" aria-label="Subir peso">'+I('plus')+'</button></div>'+
+    '<p class="hint">Vacío = peso corporal. Cada toque cambia '+fn(S.settings.step||2.5)+' kg.</p></div>';
+  h+='<div class="sets"><div class="sec"><span>Repeticiones</span></div>';
+  for(var j=0;j<n;j++){
+    var s=(e.sets||[])[j]||{}, ps=prev&&prev.e.sets&&prev.e.sets[j], ph=(ps&&ps.r!=null)?ps.r:(r?r.min:'');
+    var wOpen=s.w!=null||ui.openW[j];
+    h+='<div class="srow"><span class="slab">Serie '+(j+1)+'</span><div class="step"><button data-a="rstep" data-v="'+j+':-1" aria-label="Menos reps serie '+(j+1)+'">'+I('minus')+'</button><input data-i="rep" data-j="'+j+'" inputmode="numeric" pattern="[0-9]*" autocomplete="off" value="'+(s.r==null?'':s.r)+'" placeholder="'+ph+'" aria-label="Repeticiones serie '+(j+1)+'"><button data-a="rstep" data-v="'+j+':1" aria-label="Más reps serie '+(j+1)+'">'+I('plus')+'</button></div>'+
+      '<button class="kg'+(wOpen?' on':'')+'" data-a="setw" data-v="'+j+'" aria-label="Peso distinto en la serie '+(j+1)+'">kg</button>'+
+      (wOpen?'<div class="swrow"><input data-i="sw" data-j="'+j+'" inputmode="decimal" autocomplete="off" value="'+fn(s.w)+'" placeholder="'+(fn(e.w)||'kg')+'" aria-label="Peso de la serie '+(j+1)+'"><span class="hint" style="margin:0">peso de esta serie</span></div>':'')+'</div>';
+  }
+  h+='<div class="setacts"><button data-a="addset">'+'＋ Serie</button><button data-a="rmset">− Serie</button></div></div>';
+  h+='<button class="upbtn'+(e.up?' on':'')+'" data-a="up" aria-pressed="'+(e.up?'true':'false')+'">'+I(e.up?'check':'up')+(e.up?'Marcado: subir peso la próxima vez':'Marcar: subir peso la próxima vez')+'</button>';
+  h+='<div class="sets"><div class="sec"><span>Notas para la próxima vez</span></div><textarea class="note" data-i="note" placeholder="Ej: subir peso, ajustar el asiento, me faltó descanso…">'+esc(e.note||'')+'</textarea></div></div>';
+  body.innerHTML=h;
+  var last=ui.cur.i>=day.ex.length-1;
+  var bar=document.getElementById('lbar');
+  if(!bar){ bar=document.createElement('div'); bar.id='lbar'; bar.className='lbar'; document.getElementById('logger').appendChild(bar); }
+  bar.innerHTML='<div class="lbin"><button class="btn line navb" data-a="prev" aria-label="Ejercicio anterior"'+(ui.cur.i===0?' disabled style="opacity:.4"':'')+'>'+I('left')+'</button><span class="saved" id="saved">Se guarda solo</span><button class="btn primary" data-a="next">'+(last?'Listo':'Siguiente')+' '+I(last?'check':'right')+'</button></div>';
+};
+var savedT;
+function flashSaved(){ var el=document.getElementById('saved'); if(!el) return; el.textContent='Guardado'; el.classList.add('on'); clearTimeout(savedT); savedT=setTimeout(function(){ el.classList.remove('on'); el.textContent='Se guarda solo'; },1400); }
+function touch(){ var day=curDay(), e=curE(); if(hasData(e)&&!day.date) day.date=todayISO(); commit(); }
+
+/* weeks overlay */
+RENDER.weeks=function(){
+  var body=ovBody('weeks'); if(!body) return;
+  var cs=cursor(), curK=seq()[cs];
+  var h='<div class="ovhead"><button class="back" data-a="close">'+I('left')+' Volver</button><span class="ovtitle">Plan completo</span><span style="width:60px"></span></div>';
+  h+='<div class="wrow head"><span></span>'+DAYS.map(function(n){return '<span>'+n+'</span>';}).join('')+'</div>';
+  for(var w=1;w<=S.nweeks;w++){
+    h+='<div class="wrow"><button class="wlab'+(w===ui.wk?' cur':'')+'" data-a="go" data-v="'+w+'-0">S'+w+'</button>';
+    for(var d=0;d<5;d++){ var k=w+'-'+d; h+='<button class="cell '+dayState(k)+'" style="'+dayStyle(d)+'" data-a="go" data-v="'+k+'" aria-label="Semana '+w+' '+DAYN[d]+'"></button>'; }
+    h+='</div>';
+  }
+  h+='<div class="legend"><span>● completo</span><span>◐ a medias</span><span>◌ salteado</span><span>○ con aro = próximo</span></div>';
+  h+='<button class="btn line" data-a="addweek">'+I('plus')+' Agregar semana</button>';
+  body.innerHTML=h;
+};
+function openWeeks(){ pushOverlay('weeks'); }
+
+/* history */
+function renderHist(){
+  var h='<h1 class="page-h">Historial</h1><input class="search" data-i="hq" placeholder="Buscar ejercicio" value="'+esc(ui.hist.q)+'" autocomplete="off" aria-label="Buscar ejercicio">'+
+    '<div class="seg"><button data-a="hsort" data-v="recent" class="'+(ui.hist.sort==='recent'?'on':'')+'">Más recientes</button><button data-a="hsort" data-v="az" class="'+(ui.hist.sort==='az'?'on':'')+'">A–Z</button></div><div id="hlist"></div>';
+  $('#main').innerHTML=h; renderHistList();
+}
+function spark(vals){
+  if(vals.length<2) return '';
+  var w=70,hh=26,p=3, mn=Math.min.apply(null,vals), mx=Math.max.apply(null,vals);
+  function sx(i){ return p+i*(w-2*p)/(vals.length-1); }
+  function sy(v){ return mx===mn? hh/2 : hh-p-(v-mn)*(hh-2*p)/(mx-mn); }
+  var pts=vals.map(function(v,i){ return sx(i).toFixed(1)+','+sy(v).toFixed(1); }).join(' '), l=vals.length-1;
+  return '<svg class="spark" viewBox="0 0 '+w+' '+hh+'" aria-hidden="true"><polyline points="'+pts+'" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"/><circle cx="'+sx(l).toFixed(1)+'" cy="'+sy(vals[l]).toFixed(1)+'" r="2.6" fill="currentColor"/></svg>';
+}
+function renderHistList(){
+  var q=norm(ui.hist.q.trim()), box=document.getElementById('hlist'); if(!box) return;
+  var rows=Object.keys(S.names).map(function(id){ var h=histOf(id); return {id:id,name:S.names[id],h:h,last:h.length?idxOf(h[h.length-1].k):-1}; })
+    .filter(function(r){ return !q || norm(r.name).indexOf(q)>=0; });
+  rows.sort(function(a,b){ return ui.hist.sort==='az' ? a.name.localeCompare(b.name,'es') : (b.last-a.last)||a.name.localeCompare(b.name,'es'); });
+  if(!rows.length){ box.innerHTML='<p class="empty">No hay ejercicios con ese nombre.</p>'; return; }
+  box.innerHTML=rows.map(function(r){
+    if(!r.h.length) return '<button class="hrow" data-a="hist" data-v="'+esc(r.id)+'"><span class="hname">'+esc(r.name)+'</span><span class="hmeta">'+(histOf(r.id,true).length?'Solo tiene datos de la semana 1, que no cuenta':'Sin registros todavía')+'</span></button>';
+    var lastE=r.h[r.h.length-1], useW=usesWeight(r.h), vals=r.h.slice(-8).map(function(x){return metric(x.e,useW);});
+    var tr='', pv=r.h.length>1?r.h[r.h.length-2]:null;
+    if(pv){ var df=Math.round((metric(lastE.e,useW)-metric(pv.e,useW))*100)/100; if(df!==0) tr='<span class="trend '+(df>0?'up':'')+'">'+(df>0?'+':'−')+fn(Math.abs(df))+(useW?' kg':' reps')+'</span>'; }
+    return '<button class="hrow" data-a="hist" data-v="'+esc(r.id)+'"><span class="hname">'+esc(r.name)+'</span><span class="hlast">'+esc(wtxt(lastE.e))+' · '+esc(repsTxt(lastE.e))+'</span><span class="hmeta">'+esc(sessLabel(lastE))+' · '+r.h.length+(r.h.length===1?' sesión':' sesiones')+'</span><span class="hspark">'+spark(vals)+tr+'</span></button>';
+  }).join('');
+}
+function lineChart(pts,unit,opts){
+  opts=opts||{}; var fmt=opts.fmt||fn, band=opts.band||null;
+  if(pts.length<2) return '<p class="hint" style="padding:8px 8px 10px">Con dos sesiones registradas ya se ve la evolución.</p>';
+  var W=320,H=150,L=40,R=14,T=24,B=26, vs=[];
+  pts.forEach(function(p){ vs.push(p.v); if(p.lo!=null) vs.push(p.lo); if(p.hi!=null) vs.push(p.hi); });
+  var rmn=Math.min.apply(null,vs), rmx=Math.max.apply(null,vs), mn=rmn, mx=rmx;
+  if(band){ mn=Math.min(mn,band.min); mx=Math.max(mx,band.max); }
+  if(mn===mx){ mn-=1; mx+=1; } var pad=(mx-mn)*0.18; mn-=pad; mx+=pad;
+  function x(i){ return L+i*(W-L-R)/(pts.length-1); } function y(v){ return T+(mx-v)*(H-T-B)/(mx-mn); }
+  var poly=pts.map(function(p,i){ return x(i).toFixed(1)+','+y(p.v).toFixed(1); }).join(' ');
+  var s='<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Evolución de '+unit+'">';
+  if(band){
+    s+='<rect x="'+L+'" y="'+y(band.max).toFixed(1)+'" width="'+(W-L-R)+'" height="'+Math.max(2,y(band.min)-y(band.max)).toFixed(1)+'" fill="var(--soft)" rx="4"/>';
+  }
+  s+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+y(rmx).toFixed(1)+'" y2="'+y(rmx).toFixed(1)+'" stroke="var(--line)" stroke-dasharray="3 4"/>';
+  s+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+y(rmn).toFixed(1)+'" y2="'+y(rmn).toFixed(1)+'" stroke="var(--line)" stroke-dasharray="3 4"/>';
+  s+='<text class="ct" x="'+(L-6)+'" y="'+(y(rmx)+4).toFixed(1)+'" text-anchor="end">'+fmt(rmx)+'</text>';
+  if(rmn!==rmx) s+='<text class="ct" x="'+(L-6)+'" y="'+(y(rmn)+4).toFixed(1)+'" text-anchor="end">'+fmt(rmn)+'</text>';
+  pts.forEach(function(p,i){ if(p.lo!=null&&p.hi!=null&&p.hi>p.lo) s+='<line x1="'+x(i).toFixed(1)+'" x2="'+x(i).toFixed(1)+'" y1="'+y(p.hi).toFixed(1)+'" y2="'+y(p.lo).toFixed(1)+'" stroke="var(--mute)" stroke-opacity=".45" stroke-width="7" stroke-linecap="round"/>'; });
+  s+='<polyline points="'+poly+'" fill="none" stroke="var(--ink)" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>';
+  pts.forEach(function(p,i){
+    s+='<circle cx="'+x(i).toFixed(1)+'" cy="'+y(p.v).toFixed(1)+'" r="'+(i===pts.length-1?4.5:3)+'" fill="'+(i===pts.length-1?'var(--ink)':'var(--card)')+'" stroke="var(--ink)" stroke-width="2"/>';
+    if(pts.length<=7||i===pts.length-1){ var top=(p.hi!=null?Math.min(y(p.v),y(p.hi)):y(p.v)); s+='<text class="cv" x="'+x(i).toFixed(1)+'" y="'+(top-9).toFixed(1)+'" text-anchor="middle">'+fmt(p.v)+'</text>'; }
+  });
+  s+='<text class="ct" x="'+x(0)+'" y="'+(H-6)+'" text-anchor="start">'+esc(pts[0].label)+'</text><text class="ct" x="'+x(pts.length-1)+'" y="'+(H-6)+'" text-anchor="end">'+esc(pts[pts.length-1].label)+'</text></svg>';
+  return s;
+}
+RENDER.detail=function(){
+  var body=ovBody('detail'); if(!body) return;
+  var id=ui.detailId, h=histOf(id), useW=usesWeight(h);
+  var out='<div class="ovhead"><button class="back" data-a="close">'+I('left')+' Volver</button><span class="count num">'+h.length+(h.length===1?' sesión':' sesiones')+'</span></div><h1 class="lname">'+esc(exName(id))+'</h1>';
+  if(!h.length){ body.innerHTML=out+'<p class="empty">'+(histOf(id,true).length?'Solo tiene datos de la semana 1, que no cuenta en el historial.':'Todavía no cargaste este ejercicio.')+'</p>'; return; }
+  var best=h[0], bv=-1;
+  h.forEach(function(x){ var v=useW?(topW(x.e)||0):Math.max.apply(null,setsOf(x.e).map(function(s){return s.r;}).concat([0])); if(v>=bv){ bv=v; best=x; } });
+  var last=h[h.length-1];
+  out+='<div class="tiles"><div class="tile"><div class="tv num">'+fn(bv)+'<small>'+(useW?'kg':'reps')+'</small></div><div class="tl">Mejor '+(useW?'peso':'serie')+' · Sem '+best.wk+'</div></div>'+
+    '<div class="tile"><div class="tv num">'+(useW?fn(topW(last.e)):sumReps(last.e))+'<small>'+(useW?'kg':'reps')+'</small></div><div class="tl">'+(useW?'Última vez':'Total última vez')+' · Sem '+last.wk+'</div></div>'+
+    '<div class="tile"><div class="tv num">'+h.length+'</div><div class="tl">Sesiones</div></div></div>';
+  if(h.length<2){ out+='<div class="chartbox">'+lineChart([],'')+'</div>'; }
+  else {
+    if(useW){
+      var wp=h.filter(function(x){ return topW(x.e)!=null; }).map(function(x){ return {v:topW(x.e),label:'S'+x.wk}; });
+      out+='<div class="chartbox"><div class="ctitle">Peso <span>kg, el más alto de cada sesión</span></div>'+lineChart(wp,'peso')+'</div>';
+    }
+    var rp=h.filter(function(x){ return setsOf(x.e).length>0; }).map(function(x){ var rs=setsOf(x.e).map(function(s){return s.r;}); return {v:rs.reduce(function(a,b){return a+b;},0)/rs.length,lo:Math.min.apply(null,rs),hi:Math.max.apply(null,rs),label:'S'+x.wk}; });
+    var ob=parseObj(last.e.obj), band=(ob&&ob.max>ob.min)?{min:ob.min,max:ob.max}:null;
+    out+='<div class="chartbox"><div class="ctitle">Repeticiones <span>promedio por serie'+(band?' · zona gris: objetivo '+band.min+'–'+band.max:'')+'</span></div>'+lineChart(rp,'repeticiones por serie',{fmt:function(v){ return fn(Math.round(v*10)/10); },band:band})+'<p class="hint" style="padding:0 8px 8px">El punto es el promedio; la barra va de tu serie más baja a la más alta.</p></div>';
+  }
+  out+='<div class="sec" style="margin:4px 0 8px"><span>Sesiones</span><span class="hint" style="margin:0">Tocá una para editarla</span></div>';
+  out+=h.slice().reverse().map(function(x){
+    return '<button class="sess" data-a="sess" data-v="'+x.k+':'+x.i+'"><div class="shead">'+esc(sessLabel(x))+(x.e.up?' · <b style="color:var(--up)">↑ subir peso</b>':'')+'</div><div class="sbody"><span class="num">'+esc(wtxt(x.e))+'</span> · <span class="num">'+esc(repsTxt(x.e))+'</span></div>'+(x.e.note?'<div class="snote">'+esc(x.e.note)+'</div>':'')+'</button>';
+  }).join('');
+  body.innerHTML=out;
+};
+
+/* measures */
+var MF=[['fecha','Fecha','date',''],['peso','Peso promedio','kg',''],['cintura','Cintura','cm',''],['cuello','Cuello','cm',''],['musloD','Muslo derecho','cm',''],['musloI','Muslo izquierdo','cm',''],['pantD','Pantorrilla derecha','cm',''],['pantI','Pantorrilla izquierda','cm',''],['grasa','% grasa (balanza)','%',''],['musculo','Masa muscular','kg',''],['pasos','Pasos promedio','',''] ];
+function prevMeas(f,wk){ for(var w=wk-1;w>=1;w--){ var m=S.meas[w]; if(m&&m[f]!=null&&m[f]!=='') return {v:m[f],w:w}; } return null; }
+function deltaTxt(f,wk,val){
+  var p=prevMeas(f,wk); if(!p) return ''; if(val==null||val==='') return 'Antes: '+fn(p.v)+' (Sem '+p.w+')';
+  var d=Math.round((val-p.v)*100)/100; return 'Antes: '+fn(p.v)+' · '+(d>0?'+':d<0?'−':'')+fn(Math.abs(d));
+}
+function renderMeas(){
+  var w=ui.mwk, m=S.meas[w]||{}, h='<h1 class="page-h">Medidas semanales</h1><div class="wchips" id="wchips">';
+  for(var i=1;i<=S.nweeks;i++) h+='<button class="'+(i===w?'on ':'')+(S.meas[i]&&Object.keys(S.meas[i]).length?'has':'')+'" data-a="mwk" data-v="'+i+'" aria-label="Semana '+i+'">'+i+'</button>';
+  h+='</div><div class="mgrid">';
+  MF.forEach(function(f){
+    var key=f[0], val=m[key];
+    if(key==='fecha') h+='<label class="fld wide"><span class="fl">Fecha de la medición</span><input type="date" data-i="m" data-f="fecha" value="'+esc(val||'')+'"></label>';
+    else h+='<label class="fld"><span class="fl">'+f[1]+(f[2]?' ('+f[2]+')':'')+'</span><input inputmode="decimal" autocomplete="off" data-i="m" data-f="'+key+'" value="'+fn(val)+'" placeholder="—"><span class="fh" id="md-'+key+'">'+esc(deltaTxt(key,w,val))+'</span></label>';
+  });
+  h+='<label class="fld wide"><span class="fl">Notas</span><textarea data-i="m" data-f="notas" placeholder="Cómo te sentiste, condiciones de la medición…">'+esc(m.notas||'')+'</textarea></label></div>';
+  var weeks=Object.keys(S.meas).map(Number).filter(function(x){ var mm=S.meas[x]; return mm&&['peso','cintura','cuello','musloD','musloI','pantD','pantI'].some(function(f){return mm[f]!=null;}); }).sort(function(a,b){return a-b;});
+  if(weeks.length){
+    h+='<div class="sec" style="margin:20px 0 4px"><span>Evolución</span></div><div class="tscroll"><table><thead><tr><th>Sem</th><th>Peso</th><th>Cintura</th><th>Cuello</th><th>Muslo D</th><th>Muslo I</th><th>Pant. D</th><th>Pant. I</th></tr></thead><tbody>'+
+      weeks.map(function(x){ var mm=S.meas[x]; function c(f){ return mm[f]!=null?fn(mm[f]):'—'; } return '<tr><td>'+x+'</td><td>'+c('peso')+'</td><td>'+c('cintura')+'</td><td>'+c('cuello')+'</td><td>'+c('musloD')+'</td><td>'+c('musloI')+'</td><td>'+c('pantD')+'</td><td>'+c('pantI')+'</td></tr>'; }).join('')+'</tbody></table></div>';
+  }
+  h+='<details class="how"><summary>Cómo medir</summary><p><b>Peso:</b> por la mañana, después de ir al baño y antes de comer o beber. Usá el promedio de 7 días.</p><p><b>Cintura:</b> relajado, sin meter la panza, cinta horizontal a la altura del ombligo.</p><p><b>Muslo:</b> de pie y relajado. Medí siempre en el mismo punto; marcalo para repetirlo.</p><p><b>Pantorrilla:</b> de pie y relajado, en la parte de mayor perímetro, mismo momento y condiciones cada semana.</p><p><b>Balanza:</b> usá la Xiaomi en condiciones similares; % grasa y masa muscular sirven sobre todo para ver tendencias.</p><p><b>Frecuencia:</b> una medición semanal, idealmente el mismo día y horario.</p></details>';
+  $('#main').innerHTML=h;
+  var sel=document.querySelector('#wchips .on'); if(sel&&sel.scrollIntoView) sel.scrollIntoView({inline:'center',block:'nearest'});
+}
+
+/* data tab */
+function syncText(){
+  var s=ui.sync.state;
+  if(s==='ok') return ['ok','Respaldado en tu cuenta','Tus datos se guardan en tu cuenta de Claude y se sincronizan entre dispositivos.'];
+  if(s==='syncing') return ['','Guardando…','Enviando los últimos cambios.'];
+  if(s==='error') return ['err','No se pudo respaldar','Tus datos están a salvo en este teléfono. Se reintenta con el próximo cambio.'];
+  return ['','Guardado en este teléfono','Tus datos viven en este navegador. Exportá un respaldo de vez en cuando y antes de borrar los datos del navegador.'];
+}
+function renderData(){
+  var st=syncText(), step=S.settings.step||2.5;
+  var h='<h1 class="page-h">Datos</h1><section class="card" id="syncbox"><h3><span class="dot '+st[0]+'"></span>'+st[1]+'</h3><p>'+st[2]+(localOK?'':' <b>Ojo:</b> este navegador no permite guardar localmente.')+'</p></section>';
+  h+='<section class="card"><h3>Salto de peso</h3><p>Cuánto suben o bajan los botones + y − del peso.</p><div class="seg">'+[1,2.5,5].map(function(v){ return '<button data-a="step" data-v="'+v+'" class="'+(step===v?'on':'')+'">'+fn(v)+' kg</button>'; }).join('')+'</div></section>';
+  h+='<section class="card"><h3>Apariencia</h3><div class="seg">'+[['auto','Automática'],['light','Clara'],['dark','Oscura']].map(function(t){ return '<button data-a="theme" data-v="'+t[0]+'" class="'+(ui.theme===t[0]?'on':'')+'">'+t[1]+'</button>'; }).join('')+'</div></section>';
+  h+='<section class="card"><h3>Semana 1 en el historial</h3><p>Sus datos quedan guardados, pero no se suman al historial, los gráficos ni la última vez de cada ejercicio.</p><div class="seg"><button data-a="skip1" data-v="1" class="'+(skipped(1)?'on':'')+'">No contar</button><button data-a="skip1" data-v="0" class="'+(skipped(1)?'':'on')+'">Contar</button></div></section>';
+  h+='<section class="card"><h3>Tus datos</h3><p>El respaldo JSON guarda todo. El CSV se abre en Excel o Google Sheets con el mismo formato de tu planilla.</p>'+
+    '<button class="btn line small" data-a="exp" data-v="json">Exportar respaldo (JSON)</button><button class="btn line small" data-a="exp" data-v="csv">Exportar como planilla (CSV)</button>'+
+    '<button class="btn line small" data-a="imp">Importar respaldo</button><input type="file" id="impf" accept=".json,application/json" hidden>'+
+    '<button class="btn line small" data-a="reset" style="color:var(--danger)">Borrar todo y empezar de cero</button></section>';
+  h+='<section class="card"><h3>Usarla como app</h3><p>En Chrome tocá el menú ⋮ y elegí “Agregar a la pantalla principal” para abrirla con un toque.</p></section>';
+  $('#main').innerHTML=h;
+}
+function setSync(state){ ui.sync.state=state; if(state==='ok') ui.sync.at=Date.now(); if(ui.tab==='data'&&!ui.stack.length) renderData(); }
+
+/* ---------- cloud sync (db capability) ---------- */
+var cloud=null, pushing=false, dirty=false, pushT=null;
+function queuePush(){ if(!cloud) return; dirty=true; clearTimeout(pushT); pushT=setTimeout(doPush,1500); }
+async function doPush(){
+  if(!cloud||!dirty) return;
+  if(pushing){ pushT=setTimeout(doPush,800); return; }
+  pushing=true; dirty=false; setSync('syncing');
+  try{ await cloud.set({payload:JSON.stringify(S),updatedAt:S.updatedAt}); setSync(dirty?'syncing':'ok'); }
+  catch(e){ dirty=false; setSync('error'); }
+  pushing=false; if(dirty) pushT=setTimeout(doPush,800);
+}
+async function initCloud(){
+  try{
+    if(!(window.claude&&window.claude.use)) return;
+    var res=await Promise.all([window.claude.use('db'),window.claude.use('user')]);
+    var db=res[0], user=res[1]; if(!db||!user) return;
+    var uid=await user.id(); if(!uid) return;
+    var ref=db.doc('data/users/'+uid+'/gym');
+    var snap=await ref.get(), remote=snap.exists?snap.data():null;
+    cloud=ref;
+    if(remote&&remote.payload&&(remote.updatedAt||0)>(S.updatedAt||0)){
+      var o=JSON.parse(remote.payload);
+      if(o&&o.v===1&&o.days){ S=o; S.updatedAt=remote.updatedAt; if(!S.settings) S.settings={step:2.5}; if(!S.meas) S.meas={}; if(migrate(S)){ S.updatedAt=Date.now(); queuePush(); } saveLocal(); refreshTop(); }
+      setSync('ok');
+    } else if((S.updatedAt||0)>((remote&&remote.updatedAt)||0)){ queuePush(); }
+    else setSync('ok');
+  }catch(e){ cloud=null; }
+}
+
+/* ---------- dialogs, sheets, toast ---------- */
+var toastT;
+function toast(msg){ var t=$('#toast'); t.textContent=msg; t.classList.add('on'); clearTimeout(toastT); toastT=setTimeout(function(){ t.classList.remove('on'); },2200); }
+function dlg(o){
+  return new Promise(function(res){
+    var host=document.createElement('div'); host.className='modal';
+    host.innerHTML='<div class="mcard" role="dialog" aria-modal="true"><h3>'+esc(o.title)+'</h3>'+(o.text?'<p>'+esc(o.text)+'</p>':'')+(o.input!=null?'<input class="minput" value="'+esc(o.input)+'" placeholder="'+esc(o.ph||'')+'">':'')+(o.check?'<label class="chk"><input type="checkbox"> '+esc(o.check)+'</label>':'')+'<div class="mact"><button class="ghost" data-x="no">'+(o.cancel||'Cancelar')+'</button><button class="'+(o.danger?'danger':'primary')+'" data-x="ok">'+(o.ok||'Aceptar')+'</button></div></div>';
+    document.body.appendChild(host);
+    var inp=host.querySelector('.minput'); if(inp){ inp.focus(); inp.select(); }
+    function done(ok){ var c=host.querySelector('.chk input'); var v={ok:ok,value:inp?inp.value:null,checked:c?c.checked:false}; host.remove(); res(v); }
+    host.addEventListener('click',function(ev){ var x=ev.target.closest('[data-x]'); if(x) done(x.dataset.x==='ok'); else if(ev.target===host) done(false); });
+  });
+}
+function openSheet(html){ closeSheet(); var b=document.createElement('div'); b.className='backdrop'; b.id='sheet'; b.innerHTML='<div class="sheet">'+html+'</div>'; document.body.appendChild(b); b.addEventListener('click',function(ev){ if(ev.target===b) closeSheet(); }); }
+function closeSheet(){ var s=document.getElementById('sheet'); if(s) s.remove(); }
+
+/* ---------- picker (add / swap exercise) ---------- */
+function openPicker(mode){
+  ui.pick={mode:mode,q:''};
+  openSheet('<h3>'+(mode==='add'?'Agregar ejercicio':'Cambiar ejercicio')+'</h3><input class="search" data-i="pq" placeholder="Buscar o escribir uno nuevo" autocomplete="off" aria-label="Buscar ejercicio">'+
+    (mode==='add'?'<label class="fld" style="margin-top:10px"><span class="fl">Objetivo (series x repeticiones)</span><input id="pobj" value="3x8-12" autocomplete="off"></label>':'')+
+    '<label class="chk"><input type="checkbox" id="pfut"> Aplicar también a las semanas siguientes</label><div class="plist" id="plist"></div>');
+  renderPickList();
+}
+function renderPickList(){
+  var box=document.getElementById('plist'); if(!box) return;
+  var q=norm(ui.pick.q.trim()), names=Object.keys(S.names).map(function(id){return [id,S.names[id]];}).sort(function(a,b){return a[1].localeCompare(b[1],'es');});
+  var h=names.filter(function(n){ return !q||norm(n[1]).indexOf(q)>=0; }).map(function(n){ return '<button data-a="pick" data-v="'+esc(n[0])+'">'+esc(n[1])+'</button>'; }).join('');
+  var exact=names.some(function(n){ return norm(n[1])===q; });
+  if(q&&!exact) h='<button class="new" data-a="pick" data-v="__new__">Crear “'+esc(ui.pick.q.trim())+'”</button>'+h;
+  box.innerHTML=h;
+}
+function applyFuture(d,fromWk,f){ for(var w=fromWk+1;w<=S.nweeks;w++){ var dd=S.days[w+'-'+d]; if(dd) f(dd); } }
+function doPick(v){
+  var id=v, mode=ui.pick.mode;
+  if(v==='__new__'){ var nm=ui.pick.q.trim(); if(!nm) return; id=slug(nm)||('ex'+Date.now()); if(!S.names[id]) S.names[id]=nm; }
+  var fut=document.getElementById('pfut').checked;
+  if(mode==='add'){
+    var obj=(document.getElementById('pobj').value||'3x8-12').trim(), day=S.days[ui.wk+'-'+ui.d];
+    day.ex.push({id:id,obj:obj});
+    if(fut) applyFuture(day.d,day.wk,function(dd){ if(!dd.ex.some(function(x){return x.id===id;})) dd.ex.push({id:id,obj:obj}); });
+    commit(); closeSheet(); render(); toast('Ejercicio agregado');
+  } else {
+    var day2=curDay(), e=curE(), old=e.id; e.id=id;
+    if(fut) applyFuture(day2.d,day2.wk,function(dd){ dd.ex.forEach(function(x){ if(x.id===old&&!hasData(x)) x.id=id; }); });
+    commit(); closeSheet(); RENDER.logger();
+  }
+}
+
+/* ---------- export / import ---------- */
+function csvCell(v){ v=String(v==null?'':v); return /[;"\n\r]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; }
+function toCSV(){
+  var maxS=4; seq().forEach(function(k){ var d=S.days[k]; if(d) d.ex.forEach(function(e){ maxS=Math.max(maxS,setsOf(e).length); }); });
+  var head=['Semana','Día','Bloque','Ejercicio','Objetivo','Peso (kg)']; for(var i=1;i<=maxS;i++) head.push('Serie '+i); head.push('Notas','Fecha','Subir peso');
+  var rows=[head];
+  seq().forEach(function(k){ var d=S.days[k]; if(!d) return; d.ex.forEach(function(e){
+    var sets=setsOf(e), r=['Semana '+d.wk,DAYN[d.d],d.block||'',exName(e.id),e.obj||'',e.w==null?'':fn(e.w)+(e.tag?' '+e.tag:'')];
+    for(var i=0;i<maxS;i++){ var s=sets[i]; r.push(s? ((s.w!=null&&s.w!==e.w)? s.r+' c '+fn(s.w) : s.r) : ''); }
+    r.push(e.note||'',d.date||'',e.up?'sí':''); rows.push(r);
+  }); });
+  return '\uFEFF'+rows.map(function(r){return r.map(csvCell).join(';');}).join('\r\n');
+}
+var DL;
+async function getDL(){ if(DL!==undefined) return DL; try{ DL=(window.claude&&window.claude.use)?await window.claude.use('downloads'):null; }catch(e){ DL=null; } return DL; }
+async function exportFile(kind){
+  var data=kind==='json'?JSON.stringify(S,null,1):toCSV(), name='entrenamiento-'+todayISO()+'.'+kind;
+  try{
+    var dl=await getDL();
+    if(!dl){ try{ var bl=new Blob([data],{type:kind==='json'?'application/json':'text/csv;charset=utf-8'}), u=URL.createObjectURL(bl), a=document.createElement('a'); a.href=u; a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function(){ URL.revokeObjectURL(u); },4000); toast('Archivo descargado'); return; }catch(e2){} openSheet('<h3>Copiá el contenido</h3><p class="hint">Este navegador no permite descargar desde acá. Copiá el texto y pegalo en un archivo.</p><textarea class="copybox" readonly id="cpy"></textarea>'); var t=document.getElementById('cpy'); t.value=data; t.focus(); t.select(); return; }
+    await dl.save({filename:name,data:data}); toast('Archivo guardado');
+  }catch(e){ if(e&&e.code==='declined') return; toast('No se pudo guardar el archivo'); }
+}
+function importFile(file){
+  var fr=new FileReader();
+  fr.onload=async function(){
+    try{
+      var o=JSON.parse(fr.result); if(!o||o.v!==1||!o.days||!o.names) throw new Error('bad');
+      var r=await dlg({title:'Importar respaldo',text:'Esto reemplaza todos los datos actuales por los del archivo.',ok:'Importar',danger:true});
+      if(!r.ok) return;
+      S=o; if(!S.settings) S.settings={step:2.5}; if(!S.meas) S.meas={}; migrate(S); commit(); var c=cursor(); ui.wk=Math.floor(c/5)+1; ui.d=c%5; ui.mwk=ui.wk; render(); toast('Respaldo importado');
+    }catch(e){ toast('Ese archivo no es un respaldo válido'); }
+  };
+  fr.readAsText(file);
+}
+
+/* ---------- actions ---------- */
+function goCursor(){ var c=cursor(); ui.wk=Math.floor(c/5)+1; ui.d=c%5; }
+var A={
+  tab:function(v){ if(ui.stack.length) closeAll(); ui.tab=v; render(); window.scrollTo(0,0); },
+  wk:function(v){ ui.wk=Math.min(S.nweeks,Math.max(1,ui.wk+(+v))); render(); },
+  day:function(v){ ui.d=+v; render(); },
+  weeks:function(){ openWeeks(); },
+  go:function(v){ var p=v.split('-'); ui.wk=+p[0]; ui.d=+p[1]; ui.tab='train'; closeAll(); render(); window.scrollTo(0,0); },
+  open:function(v){ openLogger(ui.wk+'-'+ui.d,+v); },
+  close:function(){ popOverlay(); },
+  prev:function(){ if(ui.cur.i>0){ ui.cur.i--; ui.openW={}; RENDER.logger(); document.getElementById('logger').scrollTop=0; } },
+  next:function(){ var day=curDay(); if(ui.cur.i<day.ex.length-1){ ui.cur.i++; ui.openW={}; RENDER.logger(); document.getElementById('logger').scrollTop=0; } else popOverlay(); },
+  wstep:function(v){
+    var e=curE(), step=S.settings.step||2.5, p=prevOf(e.id,ui.cur.k), base=p&&p.e.w!=null?p.e.w:null, val;
+    if(e.w==null) val=base!=null?base:(+v>0?step:0); else val=e.w+(+v)*step;
+    val=Math.max(0,Math.round(val*100)/100); e.w=val; var inp=document.querySelector('[data-i="w"]'); if(inp) inp.value=fn(val); touch(); refreshUpBanner();
+  },
+  rstep:function(v){
+    var p=v.split(':'), j=+p[0], dir=+p[1], e=curE(); ensureSets(e,j);
+    var pv=prevOf(e.id,ui.cur.k), ps=pv&&pv.e.sets&&pv.e.sets[j], r=parseObj(e.obj);
+    var base=(ps&&ps.r!=null)?ps.r:(r?r.min:8), cur=e.sets[j].r, val=cur==null?base:Math.max(0,cur+dir);
+    e.sets[j].r=val; var inp=document.querySelector('[data-i="rep"][data-j="'+j+'"]'); if(inp) inp.value=val; touch();
+  },
+  setw:function(v){ var j=+v, e=curE(), s=(e.sets||[])[j]; if(ui.openW[j]||(s&&s.w!=null)){ if(s) delete s.w; ui.openW[j]=false; touch(); } else ui.openW[j]=true; RENDER.logger(); },
+  addset:function(){ var e=curE(); var n=Math.max((parseObj(e.obj)||{n:3}).n,(e.sets||[]).length,1); ensureSets(e,n); commit(); RENDER.logger(); },
+  rmset:function(){ var e=curE(); var n=Math.max((parseObj(e.obj)||{n:3}).n,(e.sets||[]).length,1); if(n<=1) return; e.sets=(e.sets||[]).slice(0,n-1); if(parseObj(e.obj)&&(parseObj(e.obj).n>=n)){ var ob=parseObj(e.obj); e.obj=(n-1)+'x'+ob.min+(ob.max!==ob.min?'-'+ob.max:''); } commit(); RENDER.logger(); },
+  copy:function(){ var e=curE(), p=prevOf(e.id,ui.cur.k); if(!p) return; e.w=p.e.w==null?null:p.e.w; if(p.e.tag) e.tag=p.e.tag; else delete e.tag; e.sets=setsOf(p.e).map(function(s){return clone(s);}); touch(); RENDER.logger(); },
+  menu:function(){ var e=curE(); openSheet('<h3>'+esc(exName(e.id))+'</h3><div class="menu"><button data-a="swap">Cambiar ejercicio</button><button data-a="editobj">Editar objetivo ('+esc(objTxt(e.obj))+')</button><button data-a="clear">Borrar lo cargado hoy</button><button class="dz" data-a="remove">Quitar del día</button></div>'); },
+  up:function(){ var e=curE(); if(e.up) delete e.up; else e.up=true; touch(); RENDER.logger(); },
+  swap:function(){ closeSheet(); openPicker('swap'); },
+  add:function(){ openPicker('add'); },
+  pick:function(v){ doPick(v); },
+  editobj:async function(){
+    closeSheet(); var e=curE(), day=curDay();
+    var r=await dlg({title:'Objetivo',text:'Series x repeticiones. Por ejemplo: 3x8-12',input:e.obj||'',check:'Aplicar también a las semanas siguientes',ok:'Guardar'});
+    if(!r.ok) return; var v=(r.value||'').trim(); if(!parseObj(v)){ toast('Formato no válido. Ejemplo: 3x8-12'); return; }
+    var id=e.id; e.obj=v; if(r.checked) applyFuture(day.d,day.wk,function(dd){ dd.ex.forEach(function(x){ if(x.id===id&&!hasData(x)) x.obj=v; }); });
+    commit(); RENDER.logger();
+  },
+  clear:async function(){
+    closeSheet(); var e=curE(); var r=await dlg({title:'Borrar lo cargado',text:'Se borran el peso, las repeticiones y la nota de este ejercicio en este día.',ok:'Borrar',danger:true});
+    if(!r.ok) return; delete e.w; delete e.tag; delete e.sets; delete e.note; delete e.up; commit(); RENDER.logger();
+  },
+  remove:async function(){
+    closeSheet(); var day=curDay(), e=curE(), id=e.id;
+    var r=await dlg({title:'Quitar ejercicio',text:'Se quita “'+exName(id)+'” de este día.',check:'Quitar también de las semanas siguientes',ok:'Quitar',danger:true});
+    if(!r.ok) return;
+    day.ex.splice(ui.cur.i,1);
+    if(r.checked) applyFuture(day.d,day.wk,function(dd){ dd.ex=dd.ex.filter(function(x){ return !(x.id===id&&!hasData(x)); }); });
+    commit(); if(!day.ex.length){ popOverlay(); return; } ui.cur.i=Math.min(ui.cur.i,day.ex.length-1); RENDER.logger();
+  },
+  finish:function(){ var day=S.days[ui.wk+'-'+ui.d]; day.fin=true; if(!day.date) day.date=todayISO(); commit(); goCursor(); render(); window.scrollTo(0,0); var nd=S.days[ui.wk+'-'+ui.d]; toast('Listo. Sigue: Semana '+ui.wk+' · '+DAYN[ui.d]); },
+  reopen:function(){ var day=S.days[ui.wk+'-'+ui.d]; day.fin=false; commit(); render(); },
+  addweek:function(){ var w=S.nweeks+1, src=S.nweeks; for(var d=0;d<5;d++){ var s=S.days[src+'-'+d]; S.days[w+'-'+d]={wk:w,d:d,block:s?s.block:'',ex:(s?s.ex:[]).map(function(x){return {id:x.id,obj:x.obj};}),fin:false}; } S.nweeks=w; commit(); RENDER.weeks(); toast('Semana '+w+' agregada'); },
+  hist:function(v){ ui.detailId=v; if(document.getElementById('detail')){ RENDER.detail(); } else pushOverlay('detail'); },
+  hsort:function(v){ ui.hist.sort=v; renderHist(); },
+  sess:function(v){ var p=v.split(':'); ui.wk=+p[0].split('-')[0]; ui.d=+p[0].split('-')[1]; openLogger(p[0],+p[1]); },
+  mwk:function(v){ ui.mwk=+v; renderMeas(); },
+  step:function(v){ S.settings.step=+v; commit(); renderData(); },
+  skip1:function(v){ S.settings.skip=(v==='1')?[1]:[]; commit(); renderData(); },
+  theme:function(v){ ui.theme=v; applyTheme(v); try{ localStorage.setItem(THEME_LS,v); }catch(e){} renderData(); },
+  exp:function(v){ exportFile(v); },
+  imp:function(){ var f=document.getElementById('impf'); if(f) f.click(); },
+  reset:async function(){
+    var r=await dlg({title:'Borrar todo',text:'Se pierde todo lo que cargaste y queda el plan vacío. Hacé un respaldo antes.',ok:'Borrar',danger:true});
+    if(!r.ok) return; S=clone(SEED); migrate(S); commit(); goCursor(); ui.mwk=ui.wk; render(); toast('Datos borrados');
+  }
+};
+document.addEventListener('click',function(ev){
+  var t=ev.target.closest('[data-a]'); if(!t||t.disabled) return;
+  var f=A[t.dataset.a]; if(f) f(t.dataset.v);
+});
+document.addEventListener('change',function(ev){ if(ev.target.id==='impf'&&ev.target.files&&ev.target.files[0]){ importFile(ev.target.files[0]); ev.target.value=''; } });
+var H={
+  w:function(t){ curE().w=num(t.value); touch(); refreshUpBanner(); },
+  tag:function(t){ var e=curE(), v=t.value.trim(); if(v) e.tag=v; else delete e.tag; touch(); },
+  rep:function(t){ var e=curE(), j=+t.dataset.j; ensureSets(e,j); var v=num(t.value); e.sets[j].r=v==null?null:Math.max(0,Math.round(v)); touch(); },
+  sw:function(t){ var e=curE(), j=+t.dataset.j; ensureSets(e,j); var v=num(t.value); if(v==null) delete e.sets[j].w; else e.sets[j].w=v; touch(); },
+  note:function(t){ curE().note=t.value; touch(); },
+  pq:function(t){ ui.pick.q=t.value; renderPickList(); },
+  hq:function(t){ ui.hist.q=t.value; renderHistList(); },
+  m:function(t){
+    var f=t.dataset.f, w=ui.mwk; if(!S.meas[w]) S.meas[w]={}; var m=S.meas[w], v;
+    if(f==='fecha'||f==='notas'){ v=t.value; if(v) m[f]=v; else delete m[f]; }
+    else { v=num(t.value); if(v==null) delete m[f]; else m[f]=v; var d=document.getElementById('md-'+f); if(d) d.textContent=deltaTxt(f,w,v); }
+    if(!Object.keys(m).length) delete S.meas[w];
+    commit();
+    var chip=document.querySelector('#wchips [data-v="'+w+'"]'); if(chip) chip.classList.toggle('has',!!S.meas[w]);
+  }
+};
+document.addEventListener('input',function(ev){ var t=ev.target, k=t.dataset&&t.dataset.i; if(k&&H[k]) H[k](t); });
+
+/* ---------- theme ---------- */
+function applyTheme(t){ var r=document.documentElement; if(t==='light'||t==='dark') r.setAttribute('data-theme',t); else r.removeAttribute('data-theme'); }
+try{ var th=localStorage.getItem(THEME_LS); if(th){ ui.theme=th; applyTheme(th); } }catch(e){}
+
+/* ---------- boot ---------- */
+var migrated=migrate(S); if(migrated){ S.updatedAt=Date.now(); saveLocal(); }
+goCursor(); ui.mwk=ui.wk; render();
+if(migrated) toast('Plan actualizado');
+initCloud();
+if('serviceWorker' in navigator){ window.addEventListener('load',function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); }); }
+})();
+</script>
+</body>
+</html>
