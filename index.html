@@ -945,7 +945,7 @@ var OCRL=[
  ['bodywater','aguaPct','body[\\s-]*water|agua[\\s-]*corporal'],
  ['bmi','bmi','\\bbmi\\b|\\bimc\\b']
 ];
-function ocrParse(words,W,H){
+function ocrParse(words,W,H,hint){
   var ws=words.map(function(w){ return {t:String(w.text||'').trim(),x0:w.x0,y0:w.y0,x1:w.x1,y1:w.y1,h:w.y1-w.y0,c:w.conf==null?100:w.conf}; }).filter(function(w){ return w.t; });
   var vals={}, flags={}, i;
   var txt=ws.map(function(w){ return w.t; }).join(' ');
@@ -958,7 +958,9 @@ function ocrParse(words,W,H){
   if(top){ var mm=top.t.replace(',','.').match(/^(\d{2,3})(?:\.(\d))?/); if(mm){ var n=parseInt(mm[1],10); if(n>=300) n=Math.floor(n/10); wInt=n; if(mm[2]!=null) wFull=parseFloat(mm[1]+'.'+mm[2]); } }
   /* puntaje: número a la izquierda de "Points"/"puntos" */
   var pt=ws.filter(function(w){ return /^(points?|puntos?|pts)$/i.test(w.t); })[0];
-  if(pt){ var cand=ws.filter(function(w){ return w!==pt&&/^\d+$/.test(w.t)&&Math.abs(w.y1-pt.y1)<pt.h*2.2&&w.x1<=pt.x0+8; }).sort(function(a,b){ return b.x1-a.x1; })[0]; if(cand) vals.score=parseInt(cand.t,10); }
+  if(pt){ var dg=ws.filter(function(w){ return w!==pt&&/^\d{1,3}$/.test(w.t)&&Math.abs(w.y1-pt.y1)<pt.h*2.5&&w.x1<=pt.x0+8&&pt.x0-w.x1<w.h*2; }).sort(function(a,b){ return b.x1-a.x1; });
+    if(dg.length){ var grp=[dg[0]]; for(i=1;i<dg.length;i++){ if(grp[grp.length-1].x0-dg[i].x1<dg[i].h*0.8&&Math.abs(dg[i].h-dg[0].h)<dg[0].h*0.5) grp.push(dg[i]); else break; }
+      grp.sort(function(a,b){ return a.x0-b.x0; }); var sc=parseInt(grp.map(function(w){ return w.t; }).join(''),10); if(!isNaN(sc)) vals.score=sc; } }
   /* columnas y líneas */
   var cols=[ws.filter(function(w){ return w.x0<W*0.45; }),ws.filter(function(w){ return w.x0>=W*0.45; })];
   var used={};
@@ -982,11 +984,25 @@ function ocrParse(words,W,H){
       }
     });
   });
-  /* el score solo pudo leerse si hay "Points"; el peso se afina con las relaciones */
-  if(wFull!=null&&inRange('peso',wFull)) vals.peso=wFull;
+  /* edad corporal: "30 years old" / "30 años" cuando no se leyó la etiqueta */
+  if(vals.edadC==null){ var yo=ws.filter(function(w){ return /^(years?|a[nñ]os)$/i.test(w.t); });
+    for(i=0;i<yo.length&&vals.edadC==null;i++){ var y=yo[i], c2=ws.filter(function(w){ return w!==y&&/^\d{2}$/.test(w.t)&&Math.abs(w.y1-y.y1)<y.h*1.6&&w.x1<=y.x0+6&&y.x0-w.x1<y.h*3; }).sort(function(a,b){ return b.x1-a.x1; })[0]; if(c2) vals.edadC=parseInt(c2.t,10); } }
+  /* peso: valor directo, suma exacta, índice de masa corporal con la altura histórica, o promedio de kg/% */
+  Object.keys(vals).forEach(function(k){ if(vals[k]!=null&&!inRange(k,vals[k])){ delete vals[k]; flags[k]='rev'; } });
+  var pw=null, pf=null;
+  if(wFull!=null&&inRange('peso',wFull)){ pw=wFull; }
+  else if(vals.grasaKg!=null&&vals.libreKg!=null){ pw=r1(vals.grasaKg+vals.libreKg); pf='calc'; }
+  else {
+    var est=[]; [['muscKg','muscPct'],['aguaKg','aguaPct'],['protKg','protPct'],['oseoKg','oseoPct'],['grasaKg','grasa']].forEach(function(p){ if(vals[p[0]]!=null&&vals[p[1]]!=null&&vals[p[1]]>0) est.push(vals[p[0]]*100/vals[p[1]]); });
+    est.sort(function(a,b){ return a-b; }); var med=est.length?(est.length%2?est[(est.length-1)/2]:(est[est.length/2-1]+est[est.length/2])/2):null;
+    var byBmi=(hint&&hint.h2&&vals.bmi)?vals.bmi*hint.h2:null;
+    var cand=byBmi!=null?byBmi:med;
+    if(cand!=null){ if(wInt!=null){ if(cand<wInt) cand=wInt; if(cand>wInt+0.95) cand=wInt+0.95; } pw=r1(cand); pf=(byBmi!=null||est.length>=3)?'calc':'rev'; }
+    else if(wInt!=null){ pw=wInt; pf='rev'; }
+  }
+  if(pw!=null&&inRange('peso',pw)){ vals.peso=pw; if(pf) flags.peso=pf; }
   var f=finalizeScale(vals,flags);
-  if(f.vals.peso==null&&wInt!=null){ f.vals.peso=wInt; f.flags.peso='rev'; }
-  else if(f.flags.peso==='calc'&&wInt!=null&&Math.abs(Math.floor(f.vals.peso)-wInt)>1){ f.flags.peso='rev'; }
+  if(f.flags.peso==='calc'&&wInt!=null&&Math.abs(Math.floor(f.vals.peso)-wInt)>1){ f.flags.peso='rev'; }
   out.vals=f.vals; out.flags=f.flags; return out;
 }
 
@@ -1110,16 +1126,41 @@ async function getWorker(setMsg){
   return TW;
 }
 function wordsOf(data){ return (data.words||[]).map(function(w){ return {text:w.text,x0:w.bbox.x0,y0:w.bbox.y0,x1:w.bbox.x1,y1:w.bbox.y1,conf:w.confidence}; }); }
+function heightHint(){ var m=scaleMap(), r=[]; Object.keys(m).forEach(function(k){ var e=m[k]; if(e&&e.peso&&e.bmi) r.push(e.peso/e.bmi); }); if(r.length<3) return null; r.sort(function(a,b){ return a-b; }); return {h2:r[Math.floor(r.length/2)]}; }
+/* encabezado: texto gris tenue sobre fondo oscuro -> estira el contraste local y lo agranda */
+function headerCanvas(orig){
+  var W=orig.width, hh=Math.min(orig.height,Math.round(W*0.3)), c=document.createElement('canvas'); c.width=W*2; c.height=hh*2;
+  var x=c.getContext('2d',{willReadFrequently:true}); x.imageSmoothingQuality='high'; x.drawImage(orig,0,0,W,hh,0,0,W*2,hh*2);
+  var im=x.getImageData(0,0,c.width,c.height), d=im.data, i, hist=new Array(256).fill(0), n=0;
+  for(i=0;i<d.length;i+=4){ var g=Math.round(0.299*d[i]+0.587*d[i+1]+0.114*d[i+2]); hist[g]++; n++; }
+  var acc=0, bg=0; for(i=0;i<256;i++){ acc+=hist[i]; if(acc>=n/2){ bg=i; break; } }
+  var dark=bg<128;
+  for(i=0;i<d.length;i+=4){ var l=0.299*d[i]+0.587*d[i+1]+0.114*d[i+2], v=dark?(l-bg)*5:(bg-l)*5; v=Math.max(0,Math.min(255,v)); d[i]=d[i+1]=d[i+2]=255-v; }
+  x.putImageData(im,0,0); return c;
+}
 async function readWithOCR(file,setMsg){
   var cv=await prepCanvas(file), wk;
   try{ wk=await getWorker(setMsg); }catch(e){ TW=null; throw new Error('noocr'); }
-  var r=await wk.recognize(cv.proc), words=wordsOf(r.data);
+  var W=cv.proc.width, H=cv.proc.height, words=[], TILE=2200, OV=240;
+  if(H<=TILE*1.15){ words=wordsOf((await wk.recognize(cv.proc)).data); }
+  else {
+    for(var y0=0,k=0;y0<H;k++){
+      var y1=Math.min(H,y0+TILE), last=y1>=H, tc=document.createElement('canvas'); tc.width=W; tc.height=y1-y0; tc.getContext('2d').drawImage(cv.proc,0,y0,W,y1-y0,0,0,W,y1-y0);
+      if(setMsg) setMsg('Leyendo el texto… parte '+(k+1));
+      var lo=y0+(k>0?OV/2:0), hi=y1-(last?0:OV/2);
+      wordsOf((await wk.recognize(tc)).data).forEach(function(w){ var cy=y0+(w.y0+w.y1)/2; if(cy>=lo&&cy<hi){ w.y0+=y0; w.y1+=y0; words.push(w); } });
+      if(last) break; y0=y1-OV;
+    }
+  }
   if(!words.length) throw new Error('empty');
-  var out=ocrParse(words,cv.proc.width,cv.proc.height);
+  var out=ocrParse(words,W,H,heightHint());
   if(!out.date||!out.time){
-    var hc=document.createElement('canvas'); hc.width=cv.orig.width; hc.height=Math.min(cv.orig.height,Math.round(cv.orig.width*0.36)); hc.getContext('2d').drawImage(cv.orig,0,0);
-    var r2=await wk.recognize(hc), t=r2.data.text||'', dm=t.match(/\d{1,2}[\/.\-]\d{1,2}[\/.\-]\d{4}|\d{4}[\/.\-]\d{1,2}[\/.\-]\d{1,2}/), tm=t.match(/\b\d{1,2}:\d{2}\b/);
-    if(!out.date&&dm) out.date=parseDateAny(dm[0],out.english?'mdy':'dmy'); if(!out.time&&tm) out.time=parseTimeAny(tm[0]);
+    try{
+      var hc=headerCanvas(cv.orig); await wk.setParameters({tessedit_pageseg_mode:'6'});
+      var t=(await wk.recognize(hc)).data.text||'';
+      var dm=t.match(/\d{1,2}\s*[\/.\-]\s*\d{1,2}\s*[\/.\-]\s*\d{4}|\d{4}\s*[\/.\-]\s*\d{1,2}\s*[\/.\-]\s*\d{1,2}/), tm=t.match(/\b\d{1,2}\s*:\s*\d{2}\b/);
+      if(!out.date&&dm) out.date=parseDateAny(dm[0].replace(/\s+/g,''),out.english?'mdy':'dmy'); if(!out.time&&tm) out.time=parseTimeAny(tm[0].replace(/\s+/g,''));
+    }catch(e){} finally{ try{ await wk.setParameters({tessedit_pageseg_mode:'11'}); }catch(e){} }
   }
   return out;
 }
