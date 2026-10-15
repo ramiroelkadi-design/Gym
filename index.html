@@ -1020,8 +1020,8 @@ async function unzip(buf){
 }
 function colIdx(ref){ var m=ref.match(/^[A-Z]+/)[0], n=0; for(var i=0;i<m.length;i++) n=n*26+m.charCodeAt(i)-64; return n-1; }
 function sheetRows(doc,ss){
-  var rows=[]; doc.querySelectorAll('row').forEach(function(r){ var arr=[]; r.querySelectorAll('c').forEach(function(c){
-    var ref=c.getAttribute('r'), t=c.getAttribute('t'), v=c.querySelector('v'), val=null;
+  var rows=[]; Array.prototype.forEach.call(doc.getElementsByTagNameNS('*','row'),function(r){ var arr=[]; Array.prototype.forEach.call(r.getElementsByTagNameNS('*','c'),function(c){
+    var ref=c.getAttribute('r'), t=c.getAttribute('t'), v=c.getElementsByTagNameNS('*','v')[0], val=null;
     if(t==='s'&&v) val=ss[+v.textContent]; else if(t==='inlineStr') val=c.textContent; else if(v) val=(t==='str'||t==='b'||t==='e')?v.textContent:parseFloat(v.textContent);
     arr[ref?colIdx(ref):arr.length]=val; }); rows.push(arr); });
   return rows;
@@ -1029,11 +1029,11 @@ function sheetRows(doc,ss){
 async function readXlsx(buf){
   var z=await unzip(buf), P=new DOMParser(); function dom(t){ return P.parseFromString(t,'application/xml'); }
   var ss=[], sx=await z.read('xl/sharedStrings.xml');
-  if(sx) dom(sx).querySelectorAll('si').forEach(function(si){ var t=''; si.querySelectorAll('t').forEach(function(x){ t+=x.textContent; }); ss.push(t); });
+  if(sx) Array.prototype.forEach.call(dom(sx).getElementsByTagNameNS('*','si'),function(si){ var t=''; Array.prototype.forEach.call(si.getElementsByTagNameNS('*','t'),function(x){ if(x.parentNode.localName!=='rPh') t+=x.textContent; }); ss.push(t); });
   var wb=dom(await z.read('xl/workbook.xml')), rels=dom(await z.read('xl/_rels/workbook.xml.rels')), rmap={}, sheets=[];
-  rels.querySelectorAll('Relationship').forEach(function(r){ rmap[r.getAttribute('Id')]=r.getAttribute('Target'); });
-  var shs=wb.querySelectorAll('sheet');
-  for(var i=0;i<shs.length;i++){ var tg=rmap[shs[i].getAttribute('r:id')]; if(!tg) continue; var xml=await z.read(tg.charAt(0)==='/'?tg.slice(1):'xl/'+tg); if(xml) sheets.push(sheetRows(dom(xml),ss)); }
+  Array.prototype.forEach.call(rels.getElementsByTagNameNS('*','Relationship'),function(r){ rmap[r.getAttribute('Id')]=r.getAttribute('Target'); });
+  var shs=wb.getElementsByTagNameNS('*','sheet');
+  for(var i=0;i<shs.length;i++){ var ra=Array.prototype.filter.call(shs[i].attributes,function(x){ return /(^|:)id$/.test(x.name); })[0], tg=ra?rmap[ra.value]:null; if(!tg) continue; var xml=await z.read(tg.charAt(0)==='/'?tg.slice(1):'xl/'+tg); if(xml) sheets.push(sheetRows(dom(xml),ss)); }
   return sheets;
 }
 function parseCSV(text){
@@ -1046,11 +1046,12 @@ function parseCSV(text){
 }
 function rowsToEntries(sheets){
   for(var s=0;s<sheets.length;s++){ var rows=sheets[s];
-    for(var h=0;h<Math.min(rows.length,10);h++){
+    for(var h=0;h<Math.min(rows.length,40);h++){
       var hd=(rows[h]||[]).map(function(c){ return norm(String(c==null?'':c)).replace(/\(.*?\)/g,'').replace(/\s+/g,' ').trim(); });
-      if(hd.indexOf('fecha')<0||hd.indexOf('peso')<0) continue;
+      var fi=-1; hd.forEach(function(x,i){ if(fi<0&&x.indexOf('fecha')===0) fi=i; });
+      if(fi<0||hd.indexOf('peso')<0) continue;
       var out=[];
-      for(var r=h+1;r<rows.length;r++){ var row=rows[r]||[], date=parseDateAny(row[hd.indexOf('fecha')],'dmy'); if(!date) continue;
+      for(var r=h+1;r<rows.length;r++){ var row=rows[r]||[], date=parseDateAny(row[fi],'dmy'); if(!date) continue;
         var e={date:date,hora:'',vals:{}};
         hd.forEach(function(name,ci){ if(name==='hora') e.hora=parseTimeAny(row[ci]); else if(SHEAD[name]){ var v=typeof row[ci]==='number'?row[ci]:num(row[ci]); if(v!=null&&!isNaN(v)) e.vals[SHEAD[name]]=v; } });
         if(Object.keys(e.vals).length) out.push(e); }
@@ -1058,20 +1059,33 @@ function rowsToEntries(sheets){
     } }
   return [];
 }
+function diagRows(sheets){
+  return sheets.map(function(rows,i){ var first=null; for(var r=0;r<Math.min(rows.length,40)&&!first;r++){ var c=(rows[r]||[]).filter(function(x){ return x!=null&&x!==''; }); if(c.length) first=c.slice(0,6).join(' | '); } return 'Hoja '+(i+1)+': '+rows.length+' filas'+(first?'; primera fila: '+first:''); }).join('. ')||'sin hojas';
+}
 function mergeScale(entries,replace){
   var map=scaleMap(), add=0, upd=0;
   entries.forEach(function(e){ var cur=map[e.date], rec=Object.assign({},replace?{}:cur||{}); if(e.hora) rec.hora=e.hora; else if(replace) delete rec.hora; Object.keys(e.vals).forEach(function(k){ rec[k]=e.vals[k]; }); if(cur) upd++; else add++; map[e.date]=rec; });
   return {add:add,upd:upd};
 }
+function decodeText(buf){ var t=new TextDecoder('utf-8').decode(buf); if(t.indexOf('\uFFFD')>=0){ try{ t=new TextDecoder('windows-1252').decode(buf); }catch(e){} } return t; }
 async function importScaleBuf(fname,buf){
+  var info='';
   try{
-    var rows, name=String(fname).toLowerCase(), u=new Uint8Array(buf), zip=(u[0]===0x50&&u[1]===0x4B);
-    if(zip) rows=await readXlsx(buf); else rows=[parseCSV(new TextDecoder().decode(buf))];
-    var ents=rowsToEntries(rows);
-    if(!ents.length){ toast('No encontré columnas de Fecha y Peso en ese archivo'); return; }
-    var snap=clone(S), r=mergeScale(ents,false); commit(); ui.mtab='scale'; render();
+    var u=new Uint8Array(buf), rows, ents=[], snap=clone(S), r;
+    info='archivo '+fname+', '+u.length+' bytes';
+    if(u[0]===0x50&&u[1]===0x4B){ rows=await readXlsx(buf); ents=rowsToEntries(rows); }
+    else {
+      var txt=decodeText(buf);
+      if(/^\s*[{\[]/.test(txt)){
+        var o=JSON.parse(txt), sc=o&&(o.scale||(o.data&&o.data.scale)), n=0;
+        if(sc&&typeof sc==='object'){ Object.keys(sc).forEach(function(k){ if(validISO(k)&&sc[k]&&typeof sc[k]==='object'){ var vals={}, hora=sc[k].hora||''; Object.keys(sc[k]).forEach(function(f){ if(SFK[f]&&typeof sc[k][f]==='number') vals[f]=sc[k][f]; }); if(Object.keys(vals).length){ ents.push({date:k,hora:hora,vals:vals}); n++; } } }); }
+        rows=[[]];
+      } else { rows=[parseCSV(txt)]; ents=rowsToEntries(rows); }
+    }
+    if(!ents.length){ openSheet('<h3>No encontré los datos</h3><p class="hint">Busco una fila de encabezados con "Fecha" y "Peso". Esto es lo que vi: '+esc(info+'. '+diagRows(rows))+'</p><button class="btn line" data-a="sdcancel">Cerrar</button>'); return; }
+    r=mergeScale(ents,false); commit(); ui.mtab='scale'; render();
     toast(r.add+' nuevos'+(r.upd?', '+r.upd+' actualizados':''),function(){ S=snap; commit(); render(); });
-  }catch(e){ toast('No pude leer ese archivo ('+(e&&e.message?e.message:'error')+')'); }
+  }catch(e){ openSheet('<h3>No pude leer el archivo</h3><p class="hint">'+esc(info+'. Error: '+(e&&e.message?e.message:'desconocido'))+'</p><button class="btn line" data-a="sdcancel">Cerrar</button>'); }
 }
 
 /* ---------- leer capturas de la app de la balanza ---------- */
@@ -1166,7 +1180,7 @@ function saveScaleDraft(){
 /* ---------- vista Balanza ---------- */
 var SCH=['peso','grasa','muscKg','bmi','aguaPct','visc','tmb','score','edadC','fc'];
 function renderScale(head){
-  var map=scaleMap(), ks=scaleKeys(), h=head+'<div class="scact"><button class="btn primary small" data-a="scimg">Leer captura de la balanza</button><button class="btn line small" data-a="scfile">Importar Excel o CSV</button><button class="btn line small" data-a="scnew">Agregar a mano</button></div><input type="file" id="scimg" accept="image/*" multiple hidden><input type="file" id="scf" accept=".xlsx,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden>';
+  var map=scaleMap(), ks=scaleKeys(), h=head+'<div class="scact"><button class="btn primary small" data-a="scimg">Leer captura de la balanza</button><button class="btn line small" data-a="scfile">Importar Excel, CSV o JSON</button><button class="btn line small" data-a="scnew">Agregar a mano</button></div><input type="file" id="scimg" accept="image/*" multiple hidden><input type="file" id="scf" accept=".xlsx,.csv,.json,text/csv,application/json,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/octet-stream,*/*" hidden>';
   if(!ks.length){ $('#main').innerHTML=h+'<p class="empty">Todavía no hay mediciones de la balanza. Subí una captura de la app o importá tu planilla.</p>'; return; }
   var last=map[ks[ks.length-1]], prev=ks.length>1?map[ks[ks.length-2]]:null;
   var dow=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
