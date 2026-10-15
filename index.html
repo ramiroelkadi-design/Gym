@@ -345,6 +345,20 @@ input::placeholder,textarea::placeholder{color:color-mix(in srgb,var(--mute) 80%
 #toast.act{pointer-events:auto;display:flex;align-items:center;gap:14px}
 #toast .tundo{font-weight:700;text-decoration:underline;padding:6px 4px;min-height:36px;color:inherit}
 .mact button:disabled{opacity:.4;cursor:not-allowed}
+/* ---- balanza ---- */
+.scact{display:flex;flex-wrap:wrap;gap:8px;margin:2px 0 4px}
+.scact .btn{flex:1 1 150px;margin:0}
+.sgrid{display:grid;grid-template-columns:1fr 1fr;gap:6px 10px}
+.fld.rev input{border-color:var(--danger);background:color-mix(in srgb,var(--danger) 9%,var(--card))}
+.fld.rev .fh{color:var(--danger);font-weight:600}
+.fld.calc input{border-style:dashed}
+.sacts{position:sticky;bottom:-16px;margin:12px -16px -16px;padding:10px 16px calc(16px + env(safe-area-inset-bottom,0px));background:var(--card);border-top:1px solid var(--line)}
+.sacts .btn{margin-top:8px}
+.sacts .btn:first-child{margin-top:0}
+.slast .tiles{margin:10px 0 0}
+body:has(#sheet) #toast,body:has(.modal) #toast{bottom:auto;top:calc(14px + env(safe-area-inset-top,0px))}
+.sbody.s2{font-size:15px}
+.sbody.s2 .num{font-size:19px}
 </style>
 </head>
 <body>
@@ -824,9 +838,11 @@ function deltaTxt(f,wk,val){
   var d=Math.round((val-p.v)*100)/100; return 'Antes: '+fn(p.v)+' · '+(d>0?'+':d<0?'−':'')+fn(Math.abs(d));
 }
 function renderMeas(){
-  var w=ui.mwk, m=S.meas[w]||{}, h='<h1 class="page-h">Medidas semanales</h1><div class="wchips" id="wchips" role="group" aria-label="Semana">';
+  var w=ui.mwk, m=S.meas[w]||{}, head='<h1 class="page-h">Medidas</h1><div class="seg" role="group" aria-label="Sección">'+segBtn('mtab','week','Semanal',ui.mtab!=='scale')+segBtn('mtab','scale','Balanza',ui.mtab==='scale')+'</div>', h;
+  if(ui.mtab==='scale'){ renderScale(head); return; }
+  h=head+'<div class="wchips" id="wchips" role="group" aria-label="Semana">';
   for(var i=1;i<=S.nweeks;i++) h+='<button class="'+(i===w?'on ':'')+(S.meas[i]&&Object.keys(S.meas[i]).length?'has':'')+'" data-a="mwk" data-v="'+i+'" aria-label="Semana '+i+(S.meas[i]&&Object.keys(S.meas[i]).length?', con datos':'')+'" aria-pressed="'+(i===w)+'">'+i+'</button>';
-  h+='</div><label class="fld wide"><span class="fl">Fecha de la medición</span><input type="date" data-i="m" data-f="fecha" value="'+esc(m.fecha||'')+'"></label>';
+  h+='</div>'+weekScaleCard(w)+'<label class="fld wide"><span class="fl">Fecha de la medición</span><input type="date" data-i="m" data-f="fecha" value="'+esc(m.fecha||'')+'"></label>';
   var byKey={}; MF.forEach(function(f){ byKey[f[0]]=f; });
   MG.forEach(function(g){
     h+='<h2 class="gh">'+g[0]+'</h2><div class="mgrid">';
@@ -850,6 +866,333 @@ function renderMeas(){
   h+='<details class="how"><summary>Cómo medir</summary><p><b>Peso:</b> por la mañana, después de ir al baño y antes de comer o beber. Usá el promedio de 7 días.</p><p><b>Cintura:</b> relajado, sin meter la panza, cinta horizontal a la altura del ombligo.</p><p><b>Muslo:</b> de pie y relajado. Medí siempre en el mismo punto; marcalo para repetirlo.</p><p><b>Pantorrilla:</b> de pie y relajado, en la parte de mayor perímetro, mismo momento y condiciones cada semana.</p><p><b>Balanza:</b> usá la Xiaomi en condiciones similares; % grasa y masa muscular sirven sobre todo para ver tendencias.</p><p><b>Frecuencia:</b> una medición semanal, idealmente el mismo día y horario.</p></details>';
   $('#main').innerHTML=h;
   var sel=document.querySelector('#wchips .on'); if(sel&&sel.scrollIntoView) sel.scrollIntoView({inline:'center',block:'nearest'});
+}
+
+/* ---------- balanza: campos, lectura de capturas, importación ---------- */
+var SF=[
+ ['peso','Peso','kg',1,[30,300]],['bmi','BMI','',1,[10,60]],['grasa','% grasa corporal','%',1,[2,70]],['grasaKg','Masa grasa','kg',1,[1,150]],
+ ['muscKg','Masa muscular','kg',1,[15,120]],['muscPct','% muscular','%',1,[20,95]],['aguaKg','Masa de agua','kg',1,[10,90]],['aguaPct','% agua corporal','%',1,[20,80]],
+ ['protKg','Masa proteica','kg',1,[3,40]],['protPct','% proteína','%',1,[5,40]],['oseoKg','Mineral óseo','kg',1,[0.8,8]],['oseoPct','% mineral óseo','%',1,[1,10]],
+ ['esqKg','Músculo esquelético','kg',1,[10,80]],['libreKg','Peso libre de grasa','kg',1,[20,150]],['visc','Grasa visceral','',0,[1,30]],['tmb','TMB','kcal',0,[800,4500]],
+ ['icc','Relación cintura-cadera','',2,[0.4,1.6]],['edadC','Edad corporal','años',0,[10,90]],['fc','Frecuencia cardíaca','bpm',0,[30,220]],['score','Body score','pts',0,[1,100]]
+];
+var SFK={}; SF.forEach(function(f){ SFK[f[0]]=f; });
+/* encabezados de la planilla (sin unidades, normalizados) -> campo */
+var SHEAD={'peso':'peso','bmi':'bmi','imc':'bmi','grasa corporal':'grasa','masa agua':'aguaKg','masa grasa':'grasaKg','contenido mineral oseo':'oseoKg','masa proteina':'protKg','masa muscular':'muscKg','porcentaje muscular':'muscPct','agua corporal':'aguaPct','porcentaje proteina':'protPct','porcentaje mineral oseo':'oseoPct','masa muscular esqueletica':'esqKg','grasa visceral':'visc','tmb':'tmb','relacion cintura-cadera':'icc','edad corporal':'edadC','peso libre de grasa':'libreKg','frecuencia cardiaca':'fc','body score':'score'};
+var SCSV=[['Fecha','fecha'],['Hora','hora'],['Peso (kg)','peso'],['BMI','bmi'],['Grasa Corporal (%)','grasa'],['Masa Agua (kg)','aguaKg'],['Masa Grasa (kg)','grasaKg'],['Contenido Mineral Óseo (kg)','oseoKg'],['Masa Proteína (kg)','protKg'],['Masa Muscular (kg)','muscKg'],['Porcentaje Muscular (%)','muscPct'],['Agua Corporal (%)','aguaPct'],['Porcentaje Proteína (%)','protPct'],['Porcentaje Mineral Óseo (%)','oseoPct'],['Masa Muscular Esquelética (kg)','esqKg'],['Grasa Visceral','visc'],['TMB (Kcal)','tmb'],['Relación Cintura-Cadera','icc'],['Edad Corporal','edadC'],['Peso Libre de Grasa (kg)','libreKg'],['Frecuencia Cardíaca (bpm)','fc'],['Body Score','score']];
+function scaleMap(){ if(!S.scale) S.scale={}; return S.scale; }
+function scaleKeys(){ return Object.keys(scaleMap()).sort(); }
+function validISO(s){ return /^\d{4}-\d{2}-\d{2}$/.test(s||'')&&!isNaN(Date.parse(s+'T00:00:00')); }
+function pad2(n){ return String(n).padStart(2,'0'); }
+function isoFromParts(y,m,d){ return y+'-'+pad2(m)+'-'+pad2(d); }
+function serialToISO(n){ var d=new Date(Math.round((n-25569)*86400000)); return d.getUTCFullYear()+'-'+pad2(d.getUTCMonth()+1)+'-'+pad2(d.getUTCDate()); }
+function parseDateAny(v,pref){
+  if(v==null||v==='') return null;
+  if(typeof v==='number') return (v>20000&&v<80000)?serialToISO(v):null;
+  var s=String(v).trim(), m;
+  if((m=s.match(/^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})/))) return isoFromParts(m[1],+m[2],+m[3]);
+  if((m=s.match(/(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{4})/))){ var a=+m[1], b=+m[2], y=m[3], dd, mm;
+    if(a>12){ dd=a; mm=b; } else if(b>12){ mm=a; dd=b; } else if(pref==='mdy'){ mm=a; dd=b; } else { dd=a; mm=b; }
+    return isoFromParts(y,mm,dd); }
+  return null;
+}
+function parseTimeAny(v){
+  if(v==null||v==='') return '';
+  if(typeof v==='number'&&v>=0&&v<1){ var t=Math.round(v*1440); return pad2(Math.floor(t/60))+':'+pad2(t%60); }
+  var m=String(v).match(/(\d{1,2}):(\d{2})/); return m?pad2(+m[1])+':'+m[2]:'';
+}
+function numTok(t){
+  var m=String(t).replace(',','.').match(/^[^\d-]{0,1}(-?\d+(?:\.\d+)?)/); return m?parseFloat(m[1]):null;
+}
+function inRange(k,v){ var f=SFK[k]; return v!=null&&!isNaN(v)&&v>=f[4][0]&&v<=f[4][1]; }
+function r1(v,d){ var p=Math.pow(10,d==null?1:d); return Math.round(v*p)/p; }
+
+/* Completa y valida: relaciones que siempre se cumplen en estas balanzas */
+function finalizeScale(vals,flags){
+  flags=flags||{};
+  Object.keys(vals).forEach(function(k){ if(vals[k]!=null&&!inRange(k,vals[k])){ delete vals[k]; flags[k]='rev'; } });
+  var v=vals;
+  if(v.grasaKg!=null&&v.libreKg!=null){ var w=r1(v.grasaKg+v.libreKg);
+    if(v.peso==null||Math.abs(v.peso-w)>0.35){ if(v.peso!=null&&Math.abs(v.peso-w)>1.5){ flags.peso='rev'; } v.peso=w; if(flags.peso!=='rev') flags.peso='calc'; } }
+  function pctOf(pk,kk){ if(v.peso&&v[pk]!=null&&v[kk]==null){ v[kk]=r1(v.peso*v[pk]/100); flags[kk]='calc'; } }
+  pctOf('grasa','grasaKg'); pctOf('aguaPct','aguaKg'); pctOf('muscPct','muscKg'); pctOf('protPct','protKg'); pctOf('oseoPct','oseoKg');
+  if(v.peso&&v.grasaKg!=null&&v.libreKg==null){ v.libreKg=r1(v.peso-v.grasaKg); flags.libreKg='calc'; }
+  if(v.peso&&v.libreKg!=null&&v.grasaKg==null){ v.grasaKg=r1(v.peso-v.libreKg); flags.grasaKg='calc'; }
+  if(v.peso&&v.grasaKg!=null&&v.grasa==null){ v.grasa=r1(v.grasaKg*100/v.peso); flags.grasa='calc'; }
+  [['grasa','grasaKg'],['muscPct','muscKg'],['aguaPct','aguaKg'],['protPct','protKg'],['oseoPct','oseoKg']].forEach(function(p){
+    if(v.peso&&v[p[0]]!=null&&v[p[1]]!=null&&flags[p[1]]!=='calc'&&Math.abs(v[p[0]]-v[p[1]]*100/v.peso)>2.2){ flags[p[0]]='rev'; flags[p[1]]='rev'; } });
+  return {vals:v,flags:flags};
+}
+
+/* ---- lectura por OCR: palabras con coordenadas -> campos ---- */
+var OCRL=[
+ ['skeletal','esqKg','skeletal[\\s-]*muscle[\\s-]*mass|masa[\\s-]*muscular[\\s-]*esquel'],
+ ['fatfree','libreKg','fat[\\s-]*free[\\s-]*body[\\s-]*weight|peso[\\s-]*libre[\\s-]*de[\\s-]*grasa'],
+ ['bonepct','oseoPct','bone[\\s-]*mineral[\\s-]*percentage|porcentaje[\\s-]*de[\\s-]*mineral|porcentaje[\\s-]*mineral'],
+ ['bonekg','oseoKg','bone[\\s-]*mineral[\\s-]*content|contenido[\\s-]*mineral'],
+ ['waterkg','aguaKg','body[\\s-]*water[\\s-]*mass|masa[\\s-]*de[\\s-]*agua|masa[\\s-]*agua'],
+ ['protpct','protPct','protein[\\s-]*percentage|porcentaje[\\s-]*de[\\s-]*prote|porcentaje[\\s-]*prote'],
+ ['protkg','protKg','protein[\\s-]*mass|masa[\\s-]*de[\\s-]*prote|masa[\\s-]*prote'],
+ ['muscpct','muscPct','muscle[\\s-]*percentage|porcentaje[\\s-]*muscular'],
+ ['fatpct','grasa','body[\\s-]*fat[\\s-]*percentage|porcentaje[\\s-]*de[\\s-]*grasa|grasa[\\s-]*corporal'],
+ ['fatkg','grasaKg','fat[\\s-]*mass|masa[\\s-]*grasa|masa[\\s-]*de[\\s-]*grasa'],
+ ['viscfat','visc','visceral[\\s-]*fat|grasa[\\s-]*visceral'],
+ ['bmr','tmb','basal[\\s-]*metabolic|metab[o\\u00f3]lica[\\s-]*basal|tmb'],
+ ['whr','icc','waist[\\s-]*to[\\s-]*hip|cintura[\\s-]*cadera|cintura[\\s-]*a[\\s-]*cadera'],
+ ['bodyage','edadC','body[\\s-]*age|edad[\\s-]*corporal'],
+ ['heart','fc','heart[\\s-]*rate|frecuencia[\\s-]*card'],
+ ['muscmass','muscKg','muscle[\\s-]*mass|masa[\\s-]*muscular'],
+ ['bodywater','aguaPct','body[\\s-]*water|agua[\\s-]*corporal'],
+ ['bmi','bmi','\\bbmi\\b|\\bimc\\b']
+];
+function ocrParse(words,W,H){
+  var ws=words.map(function(w){ return {t:String(w.text||'').trim(),x0:w.x0,y0:w.y0,x1:w.x1,y1:w.y1,h:w.y1-w.y0,c:w.conf==null?100:w.conf}; }).filter(function(w){ return w.t; });
+  var vals={}, flags={}, i;
+  var txt=ws.map(function(w){ return w.t; }).join(' ');
+  var dm=txt.match(/\d{1,2}[\/.\-]\d{1,2}[\/.\-]\d{4}|\d{4}[\/.\-]\d{1,2}[\/.\-]\d{1,2}/), tm=txt.match(/\b\d{1,2}:\d{2}\b/);
+  var english=/\b(body|weight|muscle|water|score)\b/i.test(txt);
+  var out={english:english,date:dm?parseDateAny(dm[0],english?'mdy':'dmy'):null,time:tm?parseTimeAny(tm[0]):''};
+  /* peso: el número más grande de la parte de arriba */
+  var top=ws.filter(function(w){ return w.y0<H*0.22&&/^\d/.test(w.t); }).sort(function(a,b){ return b.h-a.h; })[0];
+  var wInt=null, wFull=null;
+  if(top){ var mm=top.t.replace(',','.').match(/^(\d{2,3})(?:\.(\d))?/); if(mm){ var n=parseInt(mm[1],10); if(n>=300) n=Math.floor(n/10); wInt=n; if(mm[2]!=null) wFull=parseFloat(mm[1]+'.'+mm[2]); } }
+  /* puntaje: número a la izquierda de "Points"/"puntos" */
+  var pt=ws.filter(function(w){ return /^(points?|puntos?|pts)$/i.test(w.t); })[0];
+  if(pt){ var cand=ws.filter(function(w){ return w!==pt&&/^\d+$/.test(w.t)&&Math.abs(w.y1-pt.y1)<pt.h*2.2&&w.x1<=pt.x0+8; }).sort(function(a,b){ return b.x1-a.x1; })[0]; if(cand) vals.score=parseInt(cand.t,10); }
+  /* columnas y líneas */
+  var cols=[ws.filter(function(w){ return w.x0<W*0.45; }),ws.filter(function(w){ return w.x0>=W*0.45; })];
+  var used={};
+  cols.forEach(function(col){
+    col.sort(function(a,b){ return a.y0-b.y0; });
+    var lines=[], cur=null;
+    col.forEach(function(w){ if(cur&&Math.abs(w.y1-cur.y1)<Math.max(w.h,cur.h)*0.6) { cur.ws.push(w); cur.y1=Math.max(cur.y1,w.y1); cur.h=Math.max(cur.h,w.h); } else { cur={ws:[w],y1:w.y1,h:w.h}; lines.push(cur); } });
+    var flat=[]; lines.forEach(function(l){ l.ws.sort(function(a,b){ return a.x0-b.x0; }); l.ws.forEach(function(w){ w.lx=l.ws[0].x0; flat.push(w); }); });
+    var s='', idx=[]; flat.forEach(function(w,j){ var t=norm(w.t).replace(/[^a-z0-9\-]+/g,' ').trim()||'~'; idx.push([s.length,s.length+t.length,j]); s+=t+' '; });
+    OCRL.forEach(function(L){
+      var re=new RegExp(L[2],'g'), m;
+      while((m=re.exec(s))){
+        var a=m.index, b=m.index+m[0].length;
+        var first=null, all=[]; idx.forEach(function(p){ if(p[1]>a&&p[0]<b){ all.push(flat[p[2]]); if(!first) first=flat[p[2]]; } });
+        if(!first||all.some(function(w){ return used[w.x0+':'+w.y0]; })) continue;
+        all.forEach(function(w){ used[w.x0+':'+w.y0]=1; });
+        if(vals[L[1]]!=null) continue;
+        var best=null;
+        ws.forEach(function(w){ if(!/\d/.test(w.t)) return; if(Math.abs(w.x0-first.lx)>45) return; var dy=first.y0-w.y1; if(dy<-4||dy>first.h*7+40) return; if(!best||w.h>best.h+4||(Math.abs(w.h-best.h)<=4&&dy<best.dy)) best={w:w,h:w.h,dy:dy}; });
+        if(best){ var v=numTok(best.w.t); if(v!=null) vals[L[1]]=v; }
+      }
+    });
+  });
+  /* el score solo pudo leerse si hay "Points"; el peso se afina con las relaciones */
+  if(wFull!=null&&inRange('peso',wFull)) vals.peso=wFull;
+  var f=finalizeScale(vals,flags);
+  if(f.vals.peso==null&&wInt!=null){ f.vals.peso=wInt; f.flags.peso='rev'; }
+  else if(f.flags.peso==='calc'&&wInt!=null&&Math.abs(Math.floor(f.vals.peso)-wInt)>1){ f.flags.peso='rev'; }
+  out.vals=f.vals; out.flags=f.flags; return out;
+}
+
+/* ---------- balanza: semana <-> fechas ---------- */
+function mondayOf(iso){ var d=new Date(iso+'T12:00:00'), g=(d.getDay()+6)%7; d.setDate(d.getDate()-g); return d; }
+function isoOf(d){ return d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate()); }
+function week1Start(){
+  var votes={}; Object.keys(S.days).forEach(function(k){ var dd=S.days[k]; if(!dd.date||!validISO(dd.date)) return; var m=mondayOf(dd.date); m.setDate(m.getDate()-(dd.wk-1)*7); var key=isoOf(m); votes[key]=(votes[key]||0)+1; });
+  var best=null; Object.keys(votes).forEach(function(k){ if(!best||votes[k]>votes[best]) best=k; }); return best;
+}
+function weekRange(wk){ var s=week1Start(); if(!s) return null; var a=new Date(s+'T12:00:00'); a.setDate(a.getDate()+(wk-1)*7); var b=new Date(a); b.setDate(b.getDate()+6); return [isoOf(a),isoOf(b)]; }
+function weekScale(wk){
+  var r=weekRange(wk); if(!r) return null; var map=scaleMap(), ks=scaleKeys().filter(function(k){ return k>=r[0]&&k<=r[1]; }); if(!ks.length) return null;
+  function avg(f){ var a=ks.map(function(k){ return map[k][f]; }).filter(function(x){ return x!=null; }); return a.length?Math.round(a.reduce(function(p,c){return p+c;},0)/a.length*10)/10:null; }
+  return {n:ks.length,peso:avg('peso'),grasa:avg('grasa'),musculo:avg('muscKg')};
+}
+
+/* ---------- importar planilla (.xlsx sin librerías, o .csv) ---------- */
+async function inflateRaw(u8){ var st=new Blob([u8]).stream().pipeThrough(new DecompressionStream('deflate-raw')); return new Uint8Array(await new Response(st).arrayBuffer()); }
+async function unzip(buf){
+  var u8=new Uint8Array(buf), dv=new DataView(buf), n=u8.length, eocd=-1, dec=new TextDecoder();
+  for(var i=n-22;i>=Math.max(0,n-70000);i--){ if(dv.getUint32(i,true)===0x06054b50){ eocd=i; break; } }
+  if(eocd<0) throw new Error('zip');
+  var cnt=dv.getUint16(eocd+10,true), off=dv.getUint32(eocd+16,true), files={};
+  for(var k=0;k<cnt;k++){
+    if(dv.getUint32(off,true)!==0x02014b50) break;
+    var method=dv.getUint16(off+10,true), csz=dv.getUint32(off+20,true), nl=dv.getUint16(off+28,true), el=dv.getUint16(off+30,true), cl=dv.getUint16(off+32,true), lo=dv.getUint32(off+42,true);
+    files[dec.decode(u8.subarray(off+46,off+46+nl))]={method:method,csz:csz,lo:lo}; off+=46+nl+el+cl;
+  }
+  return {read:async function(name){ var f=files[name]; if(!f) return null; var p=f.lo, s0=p+30+dv.getUint16(p+26,true)+dv.getUint16(p+28,true), data=u8.subarray(s0,s0+f.csz); return dec.decode(f.method===0?data:await inflateRaw(data)); }};
+}
+function colIdx(ref){ var m=ref.match(/^[A-Z]+/)[0], n=0; for(var i=0;i<m.length;i++) n=n*26+m.charCodeAt(i)-64; return n-1; }
+function sheetRows(doc,ss){
+  var rows=[]; doc.querySelectorAll('row').forEach(function(r){ var arr=[]; r.querySelectorAll('c').forEach(function(c){
+    var ref=c.getAttribute('r'), t=c.getAttribute('t'), v=c.querySelector('v'), val=null;
+    if(t==='s'&&v) val=ss[+v.textContent]; else if(t==='inlineStr') val=c.textContent; else if(v) val=(t==='str'||t==='b'||t==='e')?v.textContent:parseFloat(v.textContent);
+    arr[ref?colIdx(ref):arr.length]=val; }); rows.push(arr); });
+  return rows;
+}
+async function readXlsx(buf){
+  var z=await unzip(buf), P=new DOMParser(); function dom(t){ return P.parseFromString(t,'application/xml'); }
+  var ss=[], sx=await z.read('xl/sharedStrings.xml');
+  if(sx) dom(sx).querySelectorAll('si').forEach(function(si){ var t=''; si.querySelectorAll('t').forEach(function(x){ t+=x.textContent; }); ss.push(t); });
+  var wb=dom(await z.read('xl/workbook.xml')), rels=dom(await z.read('xl/_rels/workbook.xml.rels')), rmap={}, sheets=[];
+  rels.querySelectorAll('Relationship').forEach(function(r){ rmap[r.getAttribute('Id')]=r.getAttribute('Target'); });
+  var shs=wb.querySelectorAll('sheet');
+  for(var i=0;i<shs.length;i++){ var tg=rmap[shs[i].getAttribute('r:id')]; if(!tg) continue; var xml=await z.read(tg.charAt(0)==='/'?tg.slice(1):'xl/'+tg); if(xml) sheets.push(sheetRows(dom(xml),ss)); }
+  return sheets;
+}
+function parseCSV(text){
+  text=text.replace(/^﻿/,''); var first=text.split(/\r?\n/)[0]||'', d=';'; if((first.match(/,/g)||[]).length>(first.match(/;/g)||[]).length) d=','; if(first.indexOf('\t')>=0&&first.split('\t').length>first.split(d).length) d='\t';
+  var rows=[], row=[], cell='', q=false;
+  for(var i=0;i<text.length;i++){ var c=text[i];
+    if(q){ if(c==='"'){ if(text[i+1]==='"'){ cell+='"'; i++; } else q=false; } else cell+=c; }
+    else if(c==='"') q=true; else if(c===d){ row.push(cell); cell=''; } else if(c==='\n'||c==='\r'){ if(c==='\r'&&text[i+1]==='\n') i++; row.push(cell); rows.push(row); row=[]; cell=''; } else cell+=c; }
+  if(cell!==''||row.length){ row.push(cell); rows.push(row); } return rows;
+}
+function rowsToEntries(sheets){
+  for(var s=0;s<sheets.length;s++){ var rows=sheets[s];
+    for(var h=0;h<Math.min(rows.length,10);h++){
+      var hd=(rows[h]||[]).map(function(c){ return norm(String(c==null?'':c)).replace(/\(.*?\)/g,'').replace(/\s+/g,' ').trim(); });
+      if(hd.indexOf('fecha')<0||hd.indexOf('peso')<0) continue;
+      var out=[];
+      for(var r=h+1;r<rows.length;r++){ var row=rows[r]||[], date=parseDateAny(row[hd.indexOf('fecha')],'dmy'); if(!date) continue;
+        var e={date:date,hora:'',vals:{}};
+        hd.forEach(function(name,ci){ if(name==='hora') e.hora=parseTimeAny(row[ci]); else if(SHEAD[name]){ var v=typeof row[ci]==='number'?row[ci]:num(row[ci]); if(v!=null&&!isNaN(v)) e.vals[SHEAD[name]]=v; } });
+        if(Object.keys(e.vals).length) out.push(e); }
+      if(out.length) return out;
+    } }
+  return [];
+}
+function mergeScale(entries,replace){
+  var map=scaleMap(), add=0, upd=0;
+  entries.forEach(function(e){ var cur=map[e.date], rec=Object.assign({},replace?{}:cur||{}); if(e.hora) rec.hora=e.hora; else if(replace) delete rec.hora; Object.keys(e.vals).forEach(function(k){ rec[k]=e.vals[k]; }); if(cur) upd++; else add++; map[e.date]=rec; });
+  return {add:add,upd:upd};
+}
+async function importScaleFile(file){
+  try{
+    var rows, name=file.name.toLowerCase();
+    if(/\.xlsx$/.test(name)) rows=await readXlsx(await file.arrayBuffer()); else rows=[parseCSV(await file.text())];
+    var ents=rowsToEntries(rows);
+    if(!ents.length){ toast('No encontré columnas de Fecha y Peso en ese archivo'); return; }
+    var snap=clone(S), r=mergeScale(ents,false); commit(); ui.mtab='scale'; render();
+    toast(r.add+' nuevos'+(r.upd?', '+r.upd+' actualizados':''),function(){ S=snap; commit(); render(); });
+  }catch(e){ toast('No pude leer ese archivo'); }
+}
+
+/* ---------- leer capturas de la app de la balanza ---------- */
+function loadScript(src){ return new Promise(function(res,rej){ var s=document.createElement('script'); s.src=src; s.onload=res; s.onerror=function(){ rej(new Error('script')); }; document.head.appendChild(s); }); }
+async function bitmapOf(file){ if(window.createImageBitmap) return createImageBitmap(file); return new Promise(function(res,rej){ var im=new Image(); im.onload=function(){ res(im); }; im.onerror=rej; im.src=URL.createObjectURL(file); }); }
+async function prepCanvas(file){
+  var bm=await bitmapOf(file), k=(bm.width<900)?1200/bm.width:1, W=Math.round(bm.width*k), H=Math.round(bm.height*k);
+  var o=document.createElement('canvas'); o.width=W; o.height=H; var x=o.getContext('2d',{willReadFrequently:true}); x.drawImage(bm,0,0,W,H);
+  var p=document.createElement('canvas'); p.width=W; p.height=H; var px=p.getContext('2d',{willReadFrequently:true}); px.drawImage(o,0,0);
+  var im=px.getImageData(0,0,W,H), d=im.data, sum=0, cnt=0, i;
+  for(i=0;i<d.length;i+=4*13){ sum+=0.299*d[i]+0.587*d[i+1]+0.114*d[i+2]; cnt++; }
+  var dark=(sum/cnt)<110;
+  for(i=0;i<d.length;i+=4){ var g=0.299*d[i]+0.587*d[i+1]+0.114*d[i+2]; if(dark) g=255-g; d[i]=d[i+1]=d[i+2]=g; }
+  px.putImageData(im,0,0); return {orig:o,proc:p};
+}
+var TW=null;
+async function getWorker(setMsg){
+  if(TW) return TW;
+  if(!window.Tesseract) await loadScript('https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js');
+  TW=await Tesseract.createWorker('eng',1,{logger:function(m){ if(setMsg&&m&&m.status==='recognizing text') setMsg('Leyendo el texto… '+Math.round((m.progress||0)*100)+' %'); else if(setMsg&&m&&/load|init/.test(m.status||'')) setMsg('Preparando el lector de texto (solo la primera vez)…'); }});
+  await TW.setParameters({tessedit_pageseg_mode:'11'});
+  return TW;
+}
+function wordsOf(data){ return (data.words||[]).map(function(w){ return {text:w.text,x0:w.bbox.x0,y0:w.bbox.y0,x1:w.bbox.x1,y1:w.bbox.y1,conf:w.confidence}; }); }
+async function readWithOCR(file,setMsg){
+  var cv=await prepCanvas(file), wk;
+  try{ wk=await getWorker(setMsg); }catch(e){ TW=null; throw new Error('noocr'); }
+  var r=await wk.recognize(cv.proc), words=wordsOf(r.data);
+  if(!words.length) throw new Error('empty');
+  var out=ocrParse(words,cv.proc.width,cv.proc.height);
+  if(!out.date||!out.time){
+    var hc=document.createElement('canvas'); hc.width=cv.orig.width; hc.height=Math.min(cv.orig.height,Math.round(cv.orig.width*0.36)); hc.getContext('2d').drawImage(cv.orig,0,0);
+    var r2=await wk.recognize(hc), t=r2.data.text||'', dm=t.match(/\d{1,2}[\/.\-]\d{1,2}[\/.\-]\d{4}|\d{4}[\/.\-]\d{1,2}[\/.\-]\d{1,2}/), tm=t.match(/\b\d{1,2}:\d{2}\b/);
+    if(!out.date&&dm) out.date=parseDateAny(dm[0],out.english?'mdy':'dmy'); if(!out.time&&tm) out.time=parseTimeAny(tm[0]);
+  }
+  return out;
+}
+async function readWithClaude(file){
+  var sample=(window.claude&&window.claude.use)?await window.claude.use('sample'):null; if(!sample) throw new Error('nosample');
+  var lim=await sample.limits(); if(!lim||!lim.images) throw new Error('noimg');
+  var bm=await bitmapOf(file), W=bm.width, sh=Math.max(500,Math.floor(1100000/W)), step=sh-60, blobs=[];
+  for(var y=0;y<bm.height&&blobs.length<lim.images.maxCount;y+=step){
+    var h=Math.min(sh,bm.height-y), c=document.createElement('canvas'); c.width=W; c.height=h; c.getContext('2d').drawImage(bm,0,y,W,h,0,0,W,h);
+    blobs.push(await new Promise(function(res){ c.toBlob(res,'image/jpeg',0.92); })); if(y+h>=bm.height) break;
+  }
+  var keys=SF.map(function(f){ return f[0]+' ('+f[1]+(f[2]?', '+f[2]:'')+')'; }).join('; ');
+  var prompt='Las imágenes son partes consecutivas, de arriba hacia abajo y con un pequeño solapamiento, de UNA captura de la app de una balanza de composición corporal. Extraé solo los valores que se ven escritos. Respondé únicamente con un objeto JSON con estas claves, cada una un número (punto decimal) o null si no aparece: '+keys+'. Además: fecha (texto exacto de la fecha de la medición, por ejemplo "09/28/2026"), hora ("HH:MM") e idioma ("en" o "es", según el idioma de la app). "peso" es el número grande de arriba. No incluyas flechas de variación ni los valores de "peso estándar" o sugerencias. No inventes valores.';
+  var o=await sample.json(prompt,{images:blobs,modelTier:'default'});
+  if(!o||typeof o!=='object') throw new Error('bad');
+  var vals={}; SF.forEach(function(f){ var v=o[f[0]]; v=typeof v==='string'?num(v):v; if(typeof v==='number'&&isFinite(v)) vals[f[0]]=v; });
+  var fin=finalizeScale(vals,{});
+  return {date:parseDateAny(o.fecha,o.idioma==='en'?'mdy':'dmy'),time:parseTimeAny(o.hora),vals:fin.vals,flags:fin.flags,viaClaude:true};
+}
+function scaleFormHTML(){
+  var d=ui.sd, h='<h3>'+(d.edit?'Editar medición':'Revisá la medición')+'</h3>'+(d.note?'<p class="hint" style="margin:-4px 0 10px">'+esc(d.note)+'</p>':'')+
+   '<div class="sgrid"><label class="fld'+(d.dflag?' rev':'')+'"><span class="fl">Fecha</span><input type="date" data-i="sd" data-f="date" value="'+esc(d.date||'')+'"><span class="fh">'+(d.dflag?'revisá la fecha':'')+'</span></label><label class="fld"><span class="fl">Hora</span><input type="time" data-i="sd" data-f="hora" value="'+esc(d.hora||'')+'"><span class="fh"></span></label>';
+  SF.forEach(function(f){ var fl=d.flags[f[0]]; h+='<label class="fld'+(fl?' '+fl:'')+'"><span class="fl">'+f[1]+(f[2]?' ('+f[2]+')':'')+'</span><input inputmode="decimal" autocomplete="off" data-i="sd" data-f="'+f[0]+'" value="'+fn(d.vals[f[0]])+'" placeholder="—"><span class="fh">'+(fl==='calc'?'calculado':fl==='rev'?'revisá este valor':'')+'</span></label>'; });
+  h+='</div><div class="sacts"><button class="btn primary" data-a="sdsave">Guardar</button>'+(d.edit?'<button class="btn line small" data-a="sddel" style="color:var(--danger)">Eliminar esta medición</button>':'')+'<button class="btn line small" data-a="sdcancel">'+(ui.squeue&&ui.squeue.length?'Saltar':'Cancelar')+'</button></div>';
+  return h;
+}
+function showScaleForm(){ openSheet(scaleFormHTML()); }
+async function nextCapture(){
+  var file=(ui.squeue||[]).shift(); if(!file){ return; }
+  var tok=(ui.readTok=(ui.readTok||0)+1);
+  function setMsg(t){ var el=document.getElementById('rdmsg'); if(el) el.textContent=t; }
+  openSheet('<h3>Leyendo captura</h3><p class="hint" id="rdmsg">Procesando la imagen…</p><button class="btn line small" data-a="sdcancel">Cancelar</button>');
+  var res=null, src='';
+  try{
+    if(window.claude&&window.claude.use){ try{ setMsg('Leyendo la captura con Claude…'); res=await readWithClaude(file); src='Claude'; }catch(e){ res=null; } }
+    if(tok!==ui.readTok) return;
+    if(!res){ setMsg('Leyendo la imagen…'); res=await readWithOCR(file,setMsg); src='OCR'; }
+  }catch(e){
+    if(tok!==ui.readTok) return;
+    ui.sd={date:todayISO(),hora:'',vals:{},flags:{},edit:false,dflag:true,note:'No pude leer la captura'+(e&&e.message==='noocr'?' (el lector de texto necesita conexión a internet la primera vez)':'')+'. Podés cargar los valores a mano.'};
+    showScaleForm(); return;
+  }
+  if(tok!==ui.readTok) return;
+  var date=res.date, ex=date&&scaleMap()[date];
+  ui.sd={date:date||todayISO(),hora:res.time||'',vals:res.vals,flags:res.flags,edit:false,dflag:!date,note:(src==='Claude'?'Leído con Claude. ':'Leído con reconocimiento de texto. ')+'Revisá los valores antes de guardar.'+(ex?' Ya hay un registro de esa fecha: se va a completar con estos datos.':'')+(date?'':' No pude leer la fecha.')};
+  showScaleForm();
+}
+function saveScaleDraft(){
+  var d=ui.sd; if(!validISO(d.date)){ toast('Poné una fecha válida'); return false; }
+  var map=scaleMap(), rec={}; Object.keys(d.vals).forEach(function(k){ if(d.vals[k]!=null) rec[k]=d.vals[k]; });
+  if(!Object.keys(rec).length){ toast('Cargá al menos un valor'); return false; }
+  if(d.hora) rec.hora=d.hora;
+  if(d.edit){ if(d.orig&&d.orig!==d.date) delete map[d.orig]; map[d.date]=rec; }
+  else { var cur=map[d.date]||{}; map[d.date]=Object.assign({},cur,rec); }
+  commit(); return true;
+}
+
+/* ---------- vista Balanza ---------- */
+var SCH=['peso','grasa','muscKg','bmi','aguaPct','visc','tmb','score','edadC','fc'];
+function renderScale(head){
+  var map=scaleMap(), ks=scaleKeys(), h=head+'<div class="scact"><button class="btn primary small" data-a="scimg">Leer captura de la balanza</button><button class="btn line small" data-a="scfile">Importar Excel o CSV</button><button class="btn line small" data-a="scnew">Agregar a mano</button></div><input type="file" id="scimg" accept="image/*" multiple hidden><input type="file" id="scf" accept=".xlsx,.csv,text/csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden>';
+  if(!ks.length){ $('#main').innerHTML=h+'<p class="empty">Todavía no hay mediciones de la balanza. Subí una captura de la app o importá tu planilla.</p>'; return; }
+  var last=map[ks[ks.length-1]], prev=ks.length>1?map[ks[ks.length-2]]:null;
+  var dow=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+  function dl(k){ var p=k.split('-'); return dow[new Date(k+'T12:00:00').getDay()]+' '+(+p[2])+' '+MON[+p[1]-1]; }
+  var dif=(prev&&prev.peso!=null&&last.peso!=null)?Math.round((last.peso-prev.peso)*10)/10:null;
+  h+='<section class="card slast"><div class="lasthead"><b>Última medición</b><span>'+dl(ks[ks.length-1])+(last.hora?' · '+esc(last.hora):'')+'</span></div><div class="lastw num">'+fn(last.peso)+'<small>kg</small></div>'+(dif!=null?'<p class="hint" style="margin:2px 0 0">'+(dif===0?'Sin cambios':(dif<0?'▼ ':'▲ ')+fn(Math.abs(dif))+' kg')+' respecto de la medición anterior</p>':'')+
+    '<div class="tiles">'+[['grasa','% grasa','%'],['muscKg','Músculo','kg'],['bmi','BMI',''],['aguaPct','% agua','%'],['visc','G. visceral',''],['score','Body score','']].map(function(t){ return '<div class="tile"><div class="tv num">'+(last[t[0]]!=null?fn(last[t[0]]):'—')+(last[t[0]]!=null&&t[2]?'<small>'+t[2]+'</small>':'')+'</div><div class="tl">'+t[1]+'</div></div>'; }).join('')+'</div></section>';
+  var m=SCH.indexOf(ui.schart)>=0?ui.schart:'peso', f=SFK[m];
+  var pts=ks.filter(function(k){ return map[k][m]!=null; }).slice(-60).map(function(k){ var p=k.split('-'); return {v:map[k][m],label:(+p[2])+'/'+(+p[1])}; });
+  h+='<h2 class="gh">Evolución</h2><div class="chartbox"><div class="mchips" role="group" aria-label="Medida a graficar">'+SCH.map(function(k){ var sf=SFK[k]; return '<button data-a="sch" data-v="'+k+'" class="'+(k===m?'on':'')+'" aria-pressed="'+(k===m)+'">'+esc(sf[1].replace('% grasa corporal','% grasa').replace('% agua corporal','% agua').replace('Masa muscular','Músculo').replace('Grasa visceral','Visceral').replace('Edad corporal','Edad corp.').replace('Frecuencia cardíaca','Pulso'))+'</button>'; }).join('')+'</div><div class="ctitle">'+esc(f[1])+' <span>'+f[2]+'</span></div>'+lineChart(pts,f[1],{fmt:function(v){ return fn(r1(v,f[3]||1)); }})+'</div>';
+  var vs=pts.map(function(p){ return p.v; });
+  if(vs.length){ var mn=Math.min.apply(null,vs), mx=Math.max.apply(null,vs), av=vs.reduce(function(a,b){return a+b;},0)/vs.length, ch=vs[vs.length-1]-vs[0];
+    h+='<div class="tiles"><div class="tile"><div class="tv num">'+fn(r1(mn,2))+'</div><div class="tl">Mínimo</div></div><div class="tile"><div class="tv num">'+fn(r1(mx,2))+'</div><div class="tl">Máximo</div></div><div class="tile"><div class="tv num">'+fn(r1(av,1))+'</div><div class="tl">Promedio</div></div></div><p class="hint" style="margin:-4px 0 4px">Cambio entre el primer y el último registro: '+(ch>0?'+':ch<0?'−':'')+fn(r1(Math.abs(ch),2))+' '+f[2]+'</p>'; }
+  h+='<h2 class="gh">Registros</h2>'+ks.slice().reverse().map(function(k){ var e=map[k];
+    return '<button class="sess" data-a="scedit" data-v="'+k+'"><div class="shead">'+dl(k)+(e.hora?' · '+esc(e.hora):'')+'</div><div class="sbody s2"><span class="num">'+(e.peso!=null?fn(e.peso)+' kg':'—')+'</span>'+(e.grasa!=null?' · <span class="num">'+fn(e.grasa)+' %</span> grasa':'')+(e.muscKg!=null?' · <span class="num">'+fn(e.muscKg)+' kg</span> músculo':'')+'</div></button>'; }).join('');
+  h+='<button class="btn line small" data-a="scexp">Exportar balanza (CSV)</button>';
+  $('#main').innerHTML=h;
+}
+function scaleCSV(){
+  var map=scaleMap(), rows=[SCSV.map(function(c){ return c[0]; })];
+  scaleKeys().forEach(function(k){ var e=map[k]; rows.push(SCSV.map(function(c){ return c[1]==='fecha'?k:c[1]==='hora'?(e.hora||''):(e[c[1]]!=null?fn(e[c[1]]):''); })); });
+  return '﻿'+rows.map(function(r){ return r.map(csvCell).join(';'); }).join('\r\n');
+}
+function weekScaleCard(w){
+  var s=weekScale(w); if(!s) return '';
+  return '<div class="remind"><span><b>Balanza esa semana</b> · '+s.n+(s.n===1?' registro':' registros')+(s.peso!=null?' · '+fn(s.peso)+' kg':'')+(s.grasa!=null?' · '+fn(s.grasa)+' % grasa':'')+(s.musculo!=null?' · '+fn(s.musculo)+' kg músculo':'')+'</span><button data-a="usescale">Usar</button></div>';
 }
 
 /* data tab */
@@ -989,8 +1332,8 @@ function toCSV(){
 function markBackup(kind){ if(kind!=='json') return; S.settings.lastBackup=Date.now(); commit(); if(ui.tab==='data'&&!ui.stack.length) renderData(); }
 var DL;
 async function getDL(){ if(DL!==undefined) return DL; try{ DL=(window.claude&&window.claude.use)?await window.claude.use('downloads'):null; }catch(e){ DL=null; } return DL; }
-async function exportFile(kind){
-  var data=kind==='json'?JSON.stringify(S,null,1):toCSV(), name='entrenamiento-'+todayISO()+'.'+kind;
+async function exportFile(kind,custom){
+  var data=custom?custom.data:(kind==='json'?JSON.stringify(S,null,1):toCSV()), name=custom?custom.name:'entrenamiento-'+todayISO()+'.'+kind;
   try{
     var dl=await getDL();
     if(!dl){ markBackup(kind); try{ var bl=new Blob([data],{type:kind==='json'?'application/json':'text/csv;charset=utf-8'}), u=URL.createObjectURL(bl), a=document.createElement('a'); a.href=u; a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function(){ URL.revokeObjectURL(u); },4000); toast('Archivo descargado'); return; }catch(e2){} openSheet('<h3>Copiá el contenido</h3><p class="hint">Este navegador no permite descargar desde acá. Copiá el texto y pegalo en un archivo.</p><textarea class="copybox" readonly id="cpy"></textarea>'); var t=document.getElementById('cpy'); t.value=data; t.focus(); t.select(); return; }
@@ -1075,6 +1418,17 @@ var A={
   hsort:function(v){ ui.hist.sort=v; renderHist(); },
   sess:function(v){ var p=v.split(':'); ui.wk=+p[0].split('-')[0]; ui.d=+p[0].split('-')[1]; openLogger(p[0],+p[1]); },
   mwk:function(v){ ui.mwk=+v; renderMeas(); },
+  mtab:function(v){ ui.mtab=v; renderMeas(); },
+  scimg:function(){ var f=document.getElementById('scimg'); if(f) f.click(); },
+  scfile:function(){ var f=document.getElementById('scf'); if(f) f.click(); },
+  scnew:function(){ ui.squeue=[]; ui.sd={date:todayISO(),hora:'',vals:{},flags:{},edit:false,note:''}; showScaleForm(); },
+  scedit:function(v){ var e=scaleMap()[v]; if(!e) return; var vals={}; SF.forEach(function(f){ if(e[f[0]]!=null) vals[f[0]]=e[f[0]]; }); ui.squeue=[]; ui.sd={date:v,orig:v,hora:e.hora||'',vals:vals,flags:{},edit:true,note:''}; showScaleForm(); },
+  sdsave:function(){ if(!saveScaleDraft()) return; closeSheet(); ui.mtab='scale'; if(ui.squeue&&ui.squeue.length) nextCapture(); else { render(); toast('Medición guardada'); } },
+  sddel:function(){ var d=ui.sd, snap=clone(S); delete scaleMap()[d.orig]; commit(); closeSheet(); render(); toast('Medición eliminada',function(){ S=snap; commit(); render(); }); },
+  sdcancel:function(){ ui.readTok=(ui.readTok||0)+1; closeSheet(); if(ui.squeue&&ui.squeue.length) nextCapture(); else render(); },
+  sch:function(v){ ui.schart=v; renderMeas(); },
+  usescale:function(){ var sc=weekScale(ui.mwk); if(!sc) return; var snap=clone(S), m=S.meas[ui.mwk]||(S.meas[ui.mwk]={}); if(sc.peso!=null) m.peso=sc.peso; if(sc.grasa!=null) m.grasa=sc.grasa; if(sc.musculo!=null) m.musculo=sc.musculo; commit(); renderMeas(); toast('Cargado el promedio de la balanza',function(){ S=snap; commit(); renderMeas(); }); },
+  scexp:function(){ exportFile('csv',{data:scaleCSV(),name:'balanza-'+todayISO()+'.csv'}); },
   step:function(v){ S.settings.step=+v; commit(); renderData(); },
   skip1:function(v){ S.settings.skip=(v==='1')?[1]:[]; commit(); renderData(); },
   theme:function(v){ ui.theme=v; applyTheme(v); try{ localStorage.setItem(THEME_LS,v); }catch(e){} renderData(); },
@@ -1089,13 +1443,17 @@ document.addEventListener('click',function(ev){
   var t=ev.target.closest('[data-a]'); if(!t||t.disabled) return;
   var f=A[t.dataset.a]; if(f) f(t.dataset.v);
 });
-document.addEventListener('change',function(ev){ if(ev.target.id==='impf'&&ev.target.files&&ev.target.files[0]){ importFile(ev.target.files[0]); ev.target.value=''; } });
+document.addEventListener('change',function(ev){ var t=ev.target;
+  if(t.id==='impf'&&t.files&&t.files[0]){ importFile(t.files[0]); t.value=''; }
+  else if(t.id==='scimg'&&t.files&&t.files.length){ ui.squeue=Array.prototype.slice.call(t.files); t.value=''; nextCapture(); }
+  else if(t.id==='scf'&&t.files&&t.files[0]){ var ff=t.files[0]; t.value=''; importScaleFile(ff); } });
 var H={
   w:function(t){ curE().w=num(t.value); touch(); refreshUpBanner(); },
   tag:function(t){ var e=curE(), v=t.value.trim(); if(v) e.tag=v; else delete e.tag; touch(); },
   rep:function(t){ var e=curE(), j=+t.dataset.j; ensureSets(e,j); var v=num(t.value); e.sets[j].r=v==null?null:Math.max(0,Math.round(v)); touch(); },
   sw:function(t){ var e=curE(), j=+t.dataset.j; ensureSets(e,j); var v=num(t.value); if(v==null) delete e.sets[j].w; else e.sets[j].w=v; touch(); },
   note:function(t){ curE().note=t.value; touch(); },
+  sd:function(t){ var f=t.dataset.f, d=ui.sd; if(f==='date'){ d.date=t.value; d.dflag=false; } else if(f==='hora') d.hora=t.value; else { var v=num(t.value); if(v==null) delete d.vals[f]; else d.vals[f]=v; if(d.flags[f]){ delete d.flags[f]; var fh=t.parentNode.querySelector('.fh'); if(fh) fh.textContent=''; t.parentNode.classList.remove('rev','calc'); } } },
   pq:function(t){ ui.pick.q=t.value; renderPickList(); },
   hq:function(t){ ui.hist.q=t.value; renderHistList(); },
   m:function(t){
