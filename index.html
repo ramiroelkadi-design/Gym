@@ -1063,15 +1063,15 @@ function mergeScale(entries,replace){
   entries.forEach(function(e){ var cur=map[e.date], rec=Object.assign({},replace?{}:cur||{}); if(e.hora) rec.hora=e.hora; else if(replace) delete rec.hora; Object.keys(e.vals).forEach(function(k){ rec[k]=e.vals[k]; }); if(cur) upd++; else add++; map[e.date]=rec; });
   return {add:add,upd:upd};
 }
-async function importScaleFile(file){
+async function importScaleBuf(fname,buf){
   try{
-    var rows, name=file.name.toLowerCase();
-    if(/\.xlsx$/.test(name)) rows=await readXlsx(await file.arrayBuffer()); else rows=[parseCSV(await file.text())];
+    var rows, name=String(fname).toLowerCase(), u=new Uint8Array(buf), zip=(u[0]===0x50&&u[1]===0x4B);
+    if(zip) rows=await readXlsx(buf); else rows=[parseCSV(new TextDecoder().decode(buf))];
     var ents=rowsToEntries(rows);
     if(!ents.length){ toast('No encontré columnas de Fecha y Peso en ese archivo'); return; }
     var snap=clone(S), r=mergeScale(ents,false); commit(); ui.mtab='scale'; render();
     toast(r.add+' nuevos'+(r.upd?', '+r.upd+' actualizados':''),function(){ S=snap; commit(); render(); });
-  }catch(e){ toast('No pude leer ese archivo'); }
+  }catch(e){ toast('No pude leer ese archivo ('+(e&&e.message?e.message:'error')+')'); }
 }
 
 /* ---------- leer capturas de la app de la balanza ---------- */
@@ -1340,17 +1340,16 @@ async function exportFile(kind,custom){
     await dl.save({filename:name,data:data}); markBackup(kind); toast('Archivo guardado');
   }catch(e){ if(e&&e.code==='declined') return; toast('No se pudo guardar el archivo'); }
 }
-function importFile(file){
-  var fr=new FileReader();
-  fr.onload=async function(){
+function importText(txt){
+  var fr={result:txt};
+  (async function(){
     try{
       var o=JSON.parse(fr.result); if(!o||o.v!==1||!o.days||!o.names) throw new Error('bad');
       var r=await dlg({title:'Importar respaldo',text:'Esto reemplaza todos los datos actuales por los del archivo.',ok:'Importar',danger:true});
       if(!r.ok) return;
       var snapI=clone(S); S=o; if(!S.settings) S.settings={step:2.5}; if(!S.meas) S.meas={}; migrate(S); commit(); var c=cursor(); ui.wk=Math.floor(c/5)+1; ui.d=c%5; ui.mwk=ui.wk; render(); toast('Respaldo importado',function(){ S=snapI; commit(); goCursor(); ui.mwk=ui.wk; render(); });
     }catch(e){ toast('Ese archivo no es un respaldo válido'); }
-  };
-  fr.readAsText(file);
+  })();
 }
 
 /* ---------- actions ---------- */
@@ -1444,9 +1443,10 @@ document.addEventListener('click',function(ev){
   var f=A[t.dataset.a]; if(f) f(t.dataset.v);
 });
 document.addEventListener('change',function(ev){ var t=ev.target;
-  if(t.id==='impf'&&t.files&&t.files[0]){ importFile(t.files[0]); t.value=''; }
-  else if(t.id==='scimg'&&t.files&&t.files.length){ ui.squeue=Array.prototype.slice.call(t.files); t.value=''; nextCapture(); }
-  else if(t.id==='scf'&&t.files&&t.files[0]){ var ff=t.files[0]; t.value=''; importScaleFile(ff); } });
+  /* en Android conviene leer el archivo ANTES de limpiar el input, si no la lectura falla */
+  if(t.id==='impf'&&t.files&&t.files[0]){ var f0=t.files[0]; f0.text().then(function(txt){ t.value=''; importText(txt); }).catch(function(){ t.value=''; toast('No pude leer el archivo'); }); }
+  else if(t.id==='scimg'&&t.files&&t.files.length){ var fl=Array.prototype.slice.call(t.files); Promise.all(fl.map(function(f){ return f.arrayBuffer().then(function(b){ return new Blob([b],{type:f.type||'image/png'}); }); })).then(function(bl){ t.value=''; ui.squeue=bl; nextCapture(); }).catch(function(){ t.value=''; toast('No pude leer la imagen'); }); }
+  else if(t.id==='scf'&&t.files&&t.files[0]){ var ff=t.files[0]; ff.arrayBuffer().then(function(buf){ t.value=''; importScaleBuf(ff.name,buf); }).catch(function(){ t.value=''; toast('No pude abrir el archivo desde el teléfono'); }); } });
 var H={
   w:function(t){ curE().w=num(t.value); touch(); refreshUpBanner(); },
   tag:function(t){ var e=curE(), v=t.value.trim(); if(v) e.tag=v; else delete e.tag; touch(); },
