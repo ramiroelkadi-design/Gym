@@ -1,6 +1,6 @@
 /* Service worker: la app funciona sin conexión y se actualiza sola cuando hay internet.
    Para forzar una actualización de archivos estáticos, cambiá el número de VERSION. */
-var VERSION = 'gym-v6';
+var VERSION = 'gym-v7';
 var SHELL = ['./', 'index.html', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png'];
 
 self.addEventListener('install', function (e) {
